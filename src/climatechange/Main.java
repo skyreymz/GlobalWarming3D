@@ -7,7 +7,7 @@ public class Main {
 		Terre terre = Read_file.getDataFromCSVFile("src/climatechange/tempanomaly_4x4grid.csv");
 		
 		//Tests
-		/*System.out.print("Le nombre d'années est égal à : ");
+		System.out.print("Le nombre d'années est égal à : ");
 		System.out.println(terre.getListeAnnees().size());
 		
 		System.out.print("La température minimale est égal à : ");
@@ -58,6 +58,6 @@ public class Main {
 		}
 		if (!erreur2) {
 			System.out.println("succés");
-		}*/
+		}
 	}
 }
