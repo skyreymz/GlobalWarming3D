@@ -1,8 +1,6 @@
-package application;
+package climatechange;
 
 import java.util.List;
-
-import application.Zone;
 
 public class Terre {
 	private double maxAnomalie;
