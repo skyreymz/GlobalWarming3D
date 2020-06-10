@@ -9,7 +9,7 @@ import javafx.fxml.FXMLLoader;
 
 public class EarthGUI extends Application {
 	//ne pas oublier de rajouter : fx:controller="partiegraphique.Controller"
-	//dans la ligne du HBOX du .fxml (première ligne)
+	//dans la ligne du VBOX du .fxml (première ligne)
 	//et aussi fx:id="pane3D" dans le Pane dans du .fxml
 	
 	@Override
