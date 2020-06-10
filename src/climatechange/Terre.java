@@ -4,12 +4,12 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class Terre {
-	private double minAnomalie;
-	private double maxAnomalie;
+	private float minAnomalie;
+	private float maxAnomalie;
 	private List<String> listeAnnees;
 	private List<Zone> listeZones;
 	
-	public Terre(double minAnomalie, double maxAnomalie, List<String> listeAnnees, List<Zone> listeZones) {
+	public Terre(float minAnomalie, float maxAnomalie, List<String> listeAnnees, List<Zone> listeZones) {
 		this.minAnomalie = minAnomalie;
 		this.maxAnomalie = maxAnomalie;
 		this.listeAnnees = listeAnnees;
@@ -38,11 +38,11 @@ public class Terre {
 		return liste;
 	}
 
-	public double getMinAnomalie() {
+	public float getMinAnomalie() {
 		return minAnomalie;
 	}
 
-	public double getMaxAnomalie() {
+	public float getMaxAnomalie() {
 		return maxAnomalie;
 	}
 

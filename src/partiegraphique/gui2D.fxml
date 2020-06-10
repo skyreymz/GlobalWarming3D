@@ -14,7 +14,6 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-
 <VBox alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="partiegraphique.Controller">
    <children>
       <HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="1200.0">
@@ -35,8 +34,8 @@
                         <Font name="System Bold" size="12.0" />
                      </font>
                   </Label>
-                  <RadioButton mnemonicParsing="false" prefWidth="100.0" text="Quadrilatère" />
-                  <RadioButton mnemonicParsing="false" prefWidth="100.0" text="Histogramme" />
+                  <RadioButton fx:id="quadrilatere" mnemonicParsing="false" prefWidth="100.0" text="Quadrilatère" />
+                  <RadioButton fx:id="histogramme" mnemonicParsing="false" prefWidth="100.0" text="Histogramme" />
                   <Separator />
                   <Label text="Animation">
                      <font>
@@ -53,7 +52,10 @@
                      </VBox.margin>
                   </HBox>
                   <Separator prefWidth="200.0" />
-                  <Label text="Vitesse de l'animation (années / seconde)" />
+                  <Label text="Vitesse de l'animation (années / seconde)">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font></Label>
                   <Slider majorTickUnit="1.0" max="20.0" min="1.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" value="1.0">
                      <VBox.margin>
                         <Insets right="10.0" />
@@ -81,7 +83,7 @@
             <Font name="System Bold" size="12.0" />
          </font>
       </Label>
-      <Slider majorTickUnit="5.0" max="2020.0" min="1880.0" minorTickCount="4" showTickLabels="true" showTickMarks="true" value="2000.0">
+      <Slider fx:id="annees" majorTickUnit="5.0" max="2020.0" min="1880.0" minorTickCount="4" showTickLabels="true" showTickMarks="true" value="2000.0">
          <VBox.margin>
             <Insets left="10.0" right="10.0" />
          </VBox.margin>
