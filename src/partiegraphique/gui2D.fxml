@@ -44,8 +44,8 @@
                   </Label>
                   <HBox alignment="CENTER" prefWidth="200.0" spacing="25.0">
                      <children>
-                        <Button mnemonicParsing="false" text="Start / Pause" />
-                        <Button mnemonicParsing="false" text="Stop" />
+                        <Button fx:id="start_pause" mnemonicParsing="false" text="Start / Pause" />
+                        <Button fx:id="stop" mnemonicParsing="false" text="Stop" />
                      </children>
                      <VBox.margin>
                         <Insets />
@@ -56,13 +56,13 @@
                      <font>
                         <Font name="System Bold" size="12.0" />
                      </font></Label>
-                  <Slider majorTickUnit="1.0" max="20.0" min="1.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" value="1.0">
+                  <Slider fx:id="speed" majorTickUnit="1.0" max="20.0" min="1.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" value="1.0">
                      <VBox.margin>
                         <Insets right="10.0" />
                      </VBox.margin>
                   </Slider>
                   <Separator prefWidth="200.0" />
-                  <LineChart title="Evolution des anomalies de température de la zone (latitude, longitude)">
+                  <LineChart fx:id="chart" title="Evolution des anomalies de température de la zone (latitude, longitude)">
                      <xAxis>
                         <CategoryAxis label="Année" side="BOTTOM" />
                      </xAxis>

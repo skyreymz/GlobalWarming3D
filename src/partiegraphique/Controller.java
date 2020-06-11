@@ -4,6 +4,8 @@ import climatechange.*;
 import javafx.animation.AnimationTimer;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.*;
 import javafx.geometry.Point3D;
 import javafx.scene.AmbientLight;
@@ -27,14 +29,18 @@ import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
 import java.net.URL;
 import java.util.ResourceBundle;
+import javafx.scene.control.Toggle;
+import javafx.scene.chart.LineChart;
 
 import com.interactivemesh.jfx.importer.ImportException;
 import com.interactivemesh.jfx.importer.obj.ObjModelImporter;
 
 import javafx.scene.SubScene;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Button;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.MouseEvent;
 
 public class Controller implements Initializable {
 	
@@ -45,12 +51,25 @@ public class Controller implements Initializable {
 	private Pane pane3D;
 	
 	@FXML
+	private Slider annees;
+	
+	@FXML
 	private RadioButton quadrilatere;
 	
 	@FXML
 	private RadioButton histogramme;
 	
-	@FXML Slider annees;
+	@FXML
+	private Button start_pause;
+	
+	@FXML
+	private Button stop;
+	
+	@FXML
+	private Slider speed;
+	
+	@FXML
+	private LineChart<Integer, Float> chart;
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
@@ -73,28 +92,97 @@ public class Controller implements Initializable {
         }
         MeshView[] meshViews = objImporter.getImport();
         Group earth = new Group(meshViews);
+    	
         
-      //Mise en place du décochage des radio boutons "Histogramme" et "Quadrilatère"
+    	//Initialisation
+    	quadrilatere(earth, terre, 2000);
+    	
+    	/*TODO
+    	 * ajouter une légende en bas à droite du pane
+    	 */
+    	
+    	
+    	//Slider "Années"
+    	annees.valueProperty().addListener(new ChangeListener<Number>() {
+			@Override
+			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+				if (oldValue.intValue() != newValue.intValue()) {
+					if (quadrilatere.isSelected()) {
+						earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
+						quadrilatere(earth, terre, newValue.intValue());
+					} else {
+						earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
+						histogramme(earth, terre, newValue.intValue()); //TODO ne pas oublier d'ajouter les cubes
+					}
+				}
+			}
+		});
+		
+		
+		//Mise en place du décochage des radio boutons "Histogramme" et "Quadrilatère"
     	ToggleGroup group = new ToggleGroup();
     	quadrilatere.setToggleGroup(group);
     	quadrilatere.setSelected(true);
     	histogramme.setToggleGroup(group);
-    	
-    	//Slider "Années"
-    	ChangeListener<Number> listener = new ChangeListener<Number>() {
+		
+		//RadioBoutons "quadrilatere" et "histogramme"
+		group.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
+	           @Override
+	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
+	               if (quadrilatere.isSelected()) {
+	            	   earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
+	            	   quadrilatere(earth, terre, (int) annees.getValue());
+	               } else {
+	            	   earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
+	            	   histogramme(earth, terre, (int) annees.getValue()); // ne pas oublier d'ajouter les cubes
+	               }
+	           }
+	       });
+		
+		/*TODO
+		 * modifier startNanoTime de tel sorte que :
+		 * quand on clique sur Start : startNanoTime = System.currentTimeMillis()
+		 */
+		//Animation
+		final long startNanoTime = System.nanoTime();
+        AnimationTimer animation = new AnimationTimer() {
+        	public void handle(long currentNanotime) {
+        		double t = (currentNanotime - startNanoTime) / 1000000000.0;
+        		earth.setRotationAxis(new Point3D(0,1,0));
+        		earth.setRotate(speed.getValue() * t);
+        	}
+        };
+        
+        start_pause.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
-			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-				if (quadrilatere.isSelected()) {
-					quadrilatere(earth, terre, newValue.intValue());
-					//enlever histogrammes
+			public void handle(ActionEvent event) {
+				if (start_pause.getText().equals("Start")) {
+					start_pause.setText("Pause");
+					animation.stop();
 				} else {
-					histogramme(earth, terre, newValue.intValue());
-					//enlever quadrilateres
+					start_pause.setText("Start");
+					animation.start();
 				}
-		        
 			}
-		};
-		annees.valueProperty().addListener(listener);
+		});
+        
+        /*TODO
+         * obtenir coordonnées latitude et longitude avec le click de la souris
+         */
+        //Graphique 2D
+        pane3D.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent me) {
+            	String title = "Evolution des anomalies de température de la zone (";
+            	title += me.getSceneX();
+            	title += ", ";
+            	title += me.getSceneY();
+            	title += ")";
+            	chart.setTitle(title);
+            }
+        });
+        
+        
 
         // Draw a line
 
@@ -143,6 +231,9 @@ public class Controller implements Initializable {
         PerspectiveCamera camera = new PerspectiveCamera(true);
         new CameraManager(camera, pane3D, root3D);
         
+        /*TODO
+         * Retirer la lumière ? (meilleure visibilité sans lumière)
+         */
         // Add point light
         PointLight light = new PointLight(Color.WHITE);
         light.setTranslateX(-180);
@@ -161,22 +252,6 @@ public class Controller implements Initializable {
         subscene.setCamera(camera);
         subscene.setFill(Color.GREY);
         pane3D.getChildren().addAll(subscene);
-        
-        // Set the rotation Speed
-        //double rotationSpeed = 100.0;
-        
-        // Add an animation timer
-        /*final long startNanoTime = System.nanoTime();
-        new AnimationTimer() {
-        	public void handle(long currentNanotime) {
-        		double t = (currentNanotime - startNanoTime) / 1000000000.0;
-        		//Add your code here
-        		greenCube.setRotationAxis(new Point3D(0,1,0));
-        		greenCube.setRotate(rotationSpeed * t);
-        		redCube.setRotationAxis(new Point3D(1,1,1));
-        		redCube.setRotate(-rotationSpeed * t);
-        	}
-        }.start();*/
 	}
 	
 	private void AddQuadrilateral(Group parent, Point3D topRight, Point3D bottomRight, Point3D bottomLeft, Point3D topLeft, PhongMaterial material)
@@ -269,6 +344,9 @@ public class Controller implements Initializable {
                         * java.lang.Math.cos(java.lang.Math.toRadians(lat_cor))*radius);
     }
     
+    /*TODO
+     * modifier la couleur
+     */
     private void quadrilatere(Group parent, Terre terre, int annee) {
     	float max = terre.getMaxAnomalie();
     	float min = terre.getMinAnomalie();
@@ -311,7 +389,10 @@ public class Controller implements Initializable {
         	}
     	}
     }
-    	
+    
+    /*TODO
+     * modifier la couleur
+     */
     private void histogramme (Group parent, Terre terre, int annee) {
        	float max = terre.getMaxAnomalie();
        	float min = terre.getMinAnomalie();
@@ -323,38 +404,39 @@ public class Controller implements Initializable {
            		Color color = Color.WHITE;
            		float anomalie = terre.anomalie(lat+2, lon+2, annee);
            		if (anomalie > 0) {
-          			if (anomalie < max/5) {
-           				color = new Color(0.2, 0, 0, 0.1);
+          			if (anomalie < (float) max/5) {
+           				color = new Color(0.2, 0, 0, 0.25);
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.11);
+           			} else if (anomalie < (float) 2*max/5) {
+           				color = new Color(0.4, 0, 0, 0.25);
            				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.21);
-           			} else if (anomalie < 2*max/5) {
-           				color = new Color(0.4, 0, 0, 0.1);
+           			} else if (anomalie < (float) 3*max/5) {
+           				color = new Color(0.6, 0, 0, 0.25);
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.31);
+           			} else if (anomalie < (float) 4*max/5) {
+           				color = new Color(0.8, 0, 0, 0.25);
            				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.41);
-           			} else if (anomalie < 3*max/5) {
-           				color = new Color(0.6, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.61);
-           			} else if (anomalie < 4*max/5) {
-           				color = new Color(0.8, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.81);
            			} else {
            				color = new Color(1, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 2.01);
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.51);
            			}
            		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
            			if (anomalie < min/5) {
-           				color = new Color(0, 0, 0.2, 0.1);
-           			} else if (anomalie < 2*min/5) {
-           				color = new Color(0, 0, 0.4, 0.1);
-           			} else if (anomalie < 3*min/5) {
-           				color = new Color(0, 0, 0.6, 0.1);
-           			} else if (anomalie < 4*min/5) {
-           				color = new Color(0, 0, 0.8, 0.1);
+           				color = new Color(0, 0, 0.2, 0.25);
+           			} else if (anomalie < (float) 2*min/5) {
+           				color = new Color(0, 0, 0.4, 0.25);
+           			} else if (anomalie < (float) 3*min/5) {
+           				color = new Color(0, 0, 0.6, 0.25);
+           			} else if (anomalie < (float) 4*min/5) {
+           				color = new Color(0, 0, 0.8, 0.25);
            			} else {
-           				color = new Color(0, 0, 1, 0.1);
+           				color = new Color(0, 0, 1, 0.25);
            			}
            		}
-                   colorMaterial.setDiffuseColor(color);
-                   
-                   parent.getChildren().addAll(createLine(point1, point2));
+           		colorMaterial.setDiffuseColor(color);
+                Cylinder line = createLine(point1, point2);
+                line.setMaterial(colorMaterial);
+           		parent.getChildren().addAll(line);
            	}
        	}
     }
