@@ -42,15 +42,7 @@
                         <Font name="System Bold" size="12.0" />
                      </font>
                   </Label>
-                  <HBox alignment="CENTER" prefWidth="200.0" spacing="25.0">
-                     <children>
-                        <Button fx:id="start_pause" mnemonicParsing="false" text="Start" />
-                        <Button fx:id="stop" mnemonicParsing="false" text="Stop" />
-                     </children>
-                     <VBox.margin>
-                        <Insets />
-                     </VBox.margin>
-                  </HBox>
+                  <Button fx:id="start_pause" mnemonicParsing="false" text="Start" />
                   <Separator prefWidth="200.0" />
                   <Label text="Vitesse de l'animation (seconde)">
                      <font>
@@ -83,7 +75,7 @@
             <Font name="System Bold" size="12.0" />
          </font>
       </Label>
-      <Slider fx:id="annees" majorTickUnit="5.0" max="2020.0" min="1880.0" minorTickCount="4" showTickLabels="true" showTickMarks="true" value="2000.0">
+      <Slider fx:id="annees" majorTickUnit="5.0" max="2020.0" min="1880.0" minorTickCount="4" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="2000.0">
          <VBox.margin>
             <Insets left="10.0" right="10.0" />
          </VBox.margin>

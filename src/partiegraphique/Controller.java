@@ -67,9 +67,6 @@ public class Controller implements Initializable {
 	private Button start_pause;
 	
 	@FXML
-	private Button stop;
-	
-	@FXML
 	private Slider speed;
 	
 	@FXML
@@ -107,6 +104,9 @@ public class Controller implements Initializable {
     	
     	/*TODO
     	 * ajouter une légende en bas à droite du pane
+    	 * enlever le déplacement de la terre avec clic droit dans CameraManager
+    	 * obtenir les coordonnées quand on clique sur la terre
+    	 * obtenir le graphique 2D de la zone correspondante
     	 */
 
 		//Mise en place du décochage des radio boutons "Histogramme" et "Quadrilatère"
@@ -124,30 +124,34 @@ public class Controller implements Initializable {
 	            	   quadrilatere(earth, terre, (int) annees.getValue());
 	               } else {
 	            	   earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
-	            	   histogramme(earth, terre, (int) annees.getValue()); // ne pas oublier d'ajouter les cubes
+	            	   histogramme(earth, terre, (int) annees.getValue());
 	               }
 	           }
 	       });
 		
 		/*TODO
-		 * problèmes lorsque le curseur est entre deux années : ça va super vite au début
-		 * les années 2019 à 2019.99 correspondent à l'année 2019 : (int) 2019.99 == 2019
+		 * Si on modifie la vitesse de l'animation, la nouvelle vitesse n'est pas immédiatement prise en compte
+		 * Il faut attendre la fin du changement d'année pour que la nouvelle vitesse soit prise en compte
 		 */
 		//Animation
 		final long startNanoTime = System.nanoTime();
         AnimationTimer animation = new AnimationTimer() {
-        	double compteur = speed.getValue();
+        	double compteur = speed.getValue(); // Permet d'incrémenter les années au bon moment
+        	@Override
         	public void handle(long currentNanotime) {
-        		double t = (currentNanotime - startNanoTime) / 1000000000.0;
-        		//earth.setRotationAxis(new Point3D(0,1,0));
-        		//earth.setRotate(speed.getValue() * t);
-        		System.out.println(t>compteur);
-        		if (t>compteur) {
-        			compteur += speed.getValue();
-        			annees.setValue(annees.getValue()+1);
-        			System.out.println(annees.getValue());
-        		} else {
-        			start_pause.setText("Pause");
+        		double t = (currentNanotime - startNanoTime) / 1000000000.0; // Correspond au temps écoulé depuis le lancement de l'application (en seconde)
+
+        		System.out.print(t);
+        		System.out.print(" ");
+        		System.out.println(compteur);
+        		
+        		if ((t > compteur) ) { // On entre dans cette boucle toutes les "speed.getValue()" secondes
+        			if (t < (compteur + 0.5)) {
+        				compteur += speed.getValue();
+        				annees.setValue(annees.getValue()+1);
+        			} else { // Dans ce cas, t est trop grand par rapport au compteur donc on donne la valeur de t au compteur
+        				compteur = t;
+        			}
         		}
         	}
         };
@@ -157,7 +161,6 @@ public class Controller implements Initializable {
 			public void handle(ActionEvent event) {
 				if (start_pause.getText().equals("Start") && (annees.getValue() < 2020)) {
 					start_pause.setText("Pause");
-					annees.setValue((int) annees.getValue()); //Pour éviter les arrondis
 					animation.start();
 				} else if (start_pause.getText().equals("Pause")){
 					start_pause.setText("Start");
@@ -166,7 +169,7 @@ public class Controller implements Initializable {
 			}
 		});
         
-      //Slider "Années"
+        //Slider "Années"
     	annees.valueProperty().addListener(new ChangeListener<Number>() {
 			@Override
 			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
@@ -176,8 +179,7 @@ public class Controller implements Initializable {
 						start_pause.setText("Start");
 					}
 					if (quadrilatere.isSelected()) {
-						earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
-						quadrilatere(earth, terre, newValue.intValue());
+						updateQuadrilatere(earth, terre, newValue.intValue());
 					} else {
 						earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
 						histogramme(earth, terre, newValue.intValue());
@@ -189,6 +191,17 @@ public class Controller implements Initializable {
         /*TODO
          * obtenir coordonnées latitude et longitude avec le click de la souris
          */
+    	
+    	/* INFORMATIONS
+    	 * g.setOnMouseClicked(e->{
+    		PickResult pr = e.getPickResult();
+    		System.out.println(pr.getIntersectedPoint());
+				});
+			g c'est l'objet 3D terre que je load
+				et pr.getIntersectedPoint() c'est le point3D
+					restera qu'à utilisation la rotation et le zoom faire une formule pour obtenir la lattitude et la longitute
+    	 * 
+    	 */
         //Graphique 2D
         pane3D.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
@@ -252,7 +265,7 @@ public class Controller implements Initializable {
         new CameraManager(camera, pane3D, root3D);
         
         /*TODO
-         * Meilleure visibilité sans lumière
+         * Meilleure visibilité sans point light
          */
         /*
         // Add point light
@@ -262,11 +275,11 @@ public class Controller implements Initializable {
         light.setTranslateZ(-120);
         light.getScope().addAll(root3D);
         root3D.getChildren().add(light);
-        
+        */
         // Add ambient light
         AmbientLight ambientLight = new AmbientLight(Color.WHITE);
         ambientLight.getScope().addAll(root3D);
-        root3D.getChildren().add(ambientLight);*/
+        root3D.getChildren().add(ambientLight);
 
         // Create the subscene
         SubScene subscene = new SubScene(root3D, 600, 600, true, SceneAntialiasing.BALANCED);
@@ -293,8 +306,8 @@ public class Controller implements Initializable {
     private void quadrilatere(Group parent, Terre terre, int annee) {
     	float max = terre.getMaxAnomalie();
     	float min = terre.getMinAnomalie();
-    	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
-        	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
+    	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
+        	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
         		Point3D topRight = geoCoordTo3dCoord(lat+4, lon+4, 1.01f);
         		Point3D bottomRight = geoCoordTo3dCoord(lat, lon+4, 1.01f);
         		Point3D bottomLeft = geoCoordTo3dCoord(lat, lon, 1.01f);
@@ -335,6 +348,49 @@ public class Controller implements Initializable {
     	}
     }
     
+    // Modification des quadrilatères au lieu de les supprimer et les recréer à chaque fois
+    private void updateQuadrilatere(Group parent, Terre terre, int annee) {
+    	float max = terre.getMaxAnomalie();
+    	float min = terre.getMinAnomalie();
+    	for (int i = 1 ; i < parent.getChildren().size() ; i = i + 1) {
+    		final PhongMaterial colorMaterial = new PhongMaterial();
+    		Color color;
+    		//float anomalie = terre.anomalie(lat+2, lon+2, annee);
+    		float anomalie = terre.getListeZones().get(i-1).getListeAnomalies().get(annee - 1880);
+    		if (anomalie > 0) {
+    			if (anomalie < (float) max/5) {
+       				color = new Color(0.75, 0.5, 0, 0.1);
+       			} else if (anomalie < (float) 2*max/5) {
+       				color = new Color(0.75, 0.33, 0, 0.1);
+       			} else if (anomalie < (float) 3*max/5) {
+       				color = new Color(0.75, 0.25, 0, 0.1);
+       			} else if (anomalie < (float) 4*max/5) {
+       				color = new Color(0.75, 0.13, 0, 0.1);
+       			} else {
+       				color = new Color(0.75, 0, 0, 0.1);
+       			}
+    		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
+    			if (anomalie < min/5) {
+    				color = new Color(0, 0, 0.2, 0.1);
+    			} else if (anomalie < 2*min/5) {
+    				color = new Color(0, 0, 0.4, 0.1);
+    			} else if (anomalie < 3*min/5) {
+    				color = new Color(0, 0, 0.6, 0.1);
+    			} else if (anomalie < 4*min/5) {
+    				color = new Color(0, 0, 0.8, 0.1);
+    			} else {
+    				color = new Color(0, 0, 1, 0.1);
+    			}
+    		} else { //anomalie == 0
+    			color = new Color(0.5, 0.5, 0.5, 0.1);
+    		}
+            colorMaterial.setDiffuseColor(color);
+            final MeshView meshView = (MeshView) parent.getChildren().get(i);
+            meshView.setMaterial(colorMaterial);
+    	}
+    }
+    
+    // Pour les fonctions quadrilatere et updateQuadrilatere
     private void AddQuadrilateral(Group parent, Point3D topRight, Point3D bottomRight, Point3D bottomLeft, Point3D topLeft, PhongMaterial material)
     {
         final TriangleMesh triangleMesh = new TriangleMesh();
@@ -382,8 +438,8 @@ public class Controller implements Initializable {
     private void histogramme (Group parent, Terre terre, int annee) {
        	float max = terre.getMaxAnomalie();
        	float min = terre.getMinAnomalie();
-       	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
-           	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
+       	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
+           	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
            		Point3D point1 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
            		Point3D point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
            		final PhongMaterial colorMaterial = new PhongMaterial();
