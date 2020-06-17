@@ -67,7 +67,7 @@
          </children>
       </HBox>
       <Separator />
-      <Label text="Années">
+      <Label fx:id="labelAnnee" text="Années (2000)">
          <padding>
             <Insets bottom="10.0" top="10.0" />
          </padding>
@@ -75,7 +75,7 @@
             <Font name="System Bold" size="12.0" />
          </font>
       </Label>
-      <Slider fx:id="annees" majorTickUnit="5.0" max="2020.0" min="1880.0" minorTickCount="4" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="2000.0">
+      <Slider fx:id="sliderAnnee" majorTickUnit="5.0" max="2020.0" min="1880.0" minorTickCount="4" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="2000.0">
          <VBox.margin>
             <Insets left="10.0" right="10.0" />
          </VBox.margin>

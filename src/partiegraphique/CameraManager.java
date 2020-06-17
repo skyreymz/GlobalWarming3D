@@ -9,17 +9,18 @@ import javafx.scene.transform.Rotate;
 
 public class CameraManager {
 
-    private static final double CAMERA_MIN_DISTANCE = -0.5;
+    private static final double CAMERA_MIN_DISTANCE = -1.5;
+    private static final double CAMERA_MAX_DISTANCE = -10;
     private static final double CAMERA_INITIAL_DISTANCE = -5;
     private static final double CAMERA_INITIAL_X_ANGLE = 0.0;
     private static final double CAMERA_INITIAL_Y_ANGLE = 0.0;
+    private static final double CAMERA_MIN_X_ANGLE = -90;
+    private static final double CAMERA_MAX_X_ANGLE = 90;
     private static final double CAMERA_NEAR_CLIP = 0.1;
     private static final double CAMERA_FAR_CLIP = 10000.0;
     private static final double CONTROL_MULTIPLIER = 0.1;
-    private static final double SHIFT_MULTIPLIER = 10.0;
     private static final double MOUSE_SPEED = 0.05;
     private static final double ROTATION_SPEED = 2.0;
-    private static final double TRACK_SPEED = 0.6;
 
     private final Group cameraXform = new Group();
     private final Group cameraXform2 = new Group();
@@ -86,15 +87,15 @@ public class CameraManager {
                 if (me.isControlDown()) {
                     modifier = CONTROL_MULTIPLIER;
                 }
-                if (me.isShiftDown()) {
-                    modifier = SHIFT_MULTIPLIER;
-                }
                 if (me.isPrimaryButtonDown()) {
+                	double newRx = rx.getAngle() - mouseDeltaY * modifier * ROTATION_SPEED;
+                	if (newRx > CAMERA_MAX_X_ANGLE) {
+                		newRx = CAMERA_MAX_X_ANGLE;
+                	} else if (newRx < CAMERA_MIN_X_ANGLE) {
+                		newRx = CAMERA_MIN_X_ANGLE;
+                	}
+                	rx.setAngle(newRx);
                     ry.setAngle(ry.getAngle() + mouseDeltaX * modifier * ROTATION_SPEED);
-                    rx.setAngle(rx.getAngle() - mouseDeltaY * modifier * ROTATION_SPEED);
-                } else if (me.isSecondaryButtonDown()) {
-                    cameraXform2.setTranslateX(cameraXform2.getTranslateX() - mouseDeltaX * MOUSE_SPEED * modifier * TRACK_SPEED);
-                    cameraXform2.setTranslateY(cameraXform2.getTranslateY() - mouseDeltaY * MOUSE_SPEED * modifier * TRACK_SPEED);
                 }
             }
         });
@@ -106,12 +107,14 @@ public class CameraManager {
                 if (event.isControlDown()) {
                     modifier = CONTROL_MULTIPLIER;
                 }
-                if (event.isShiftDown()) {
-                    modifier = SHIFT_MULTIPLIER;
-                }
+                
                 double z = camera.getTranslateZ();
                 double newZ = z + event.getDeltaY() * MOUSE_SPEED * modifier;
-                if (newZ > CAMERA_MIN_DISTANCE) newZ = CAMERA_MIN_DISTANCE;
+                if (newZ > CAMERA_MIN_DISTANCE) {
+                	newZ = CAMERA_MIN_DISTANCE;
+                } else if (newZ < CAMERA_MAX_DISTANCE) {
+                	newZ = CAMERA_MAX_DISTANCE;
+                }
                 camera.setTranslateZ(newZ);
             }
         });
@@ -122,9 +125,7 @@ public class CameraManager {
             @Override
             public void handle(KeyEvent event) {
                 switch (event.getCode()) {
-                    case ALT:
-                        cameraXform2.setTranslateX(0.0);
-                        cameraXform2.setTranslateY(0.0);
+                    case ALT: //remet la terre dans sa position initiale
 
                         camera.setTranslateZ(CAMERA_INITIAL_DISTANCE);
 

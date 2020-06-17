@@ -1,5 +1,9 @@
 package partiegraphique;
 
+/* TODO
+ * trier les import
+ */
+
 import climatechange.*;
 import javafx.animation.AnimationTimer;
 import javafx.beans.value.ChangeListener;
@@ -19,15 +23,18 @@ import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
+import javafx.scene.shape.Shape;
 import javafx.scene.shape.Box;
 import javafx.scene.shape.Cylinder;
 import javafx.scene.shape.MeshView;
 import javafx.scene.shape.Sphere;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.TriangleMesh;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
+
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -35,6 +42,8 @@ import org.junit.rules.Timeout;
 
 import javafx.scene.control.Toggle;
 import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 
 import com.interactivemesh.jfx.importer.ImportException;
 import com.interactivemesh.jfx.importer.obj.ObjModelImporter;
@@ -43,19 +52,27 @@ import javafx.scene.SubScene;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Button;
 import javafx.scene.control.Slider;
+import javafx.scene.control.Label;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.PickResult;
 
 public class Controller implements Initializable {
 	
 	private static final float TEXTURE_LAT_OFFSET = -0.2f;
     private static final float TEXTURE_LON_OFFSET = 2.8f;
+    
+    private float maxAnomalie; // Anomalie maximale de température, pour éviter de faire plein de fois l'appel à la méthode terre.getMaxAnomalie()
+    private float minAnomalie; // Anomalie minimale de température, pour éviter de faire plein de fois l'appel à la méthode terre.getMinAnomalie()
 	
 	@FXML
 	private Pane pane3D;
 	
 	@FXML
-	private Slider annees;
+	private Label labelAnnee;
+	
+	@FXML
+	private Slider sliderAnnee;
 	
 	@FXML
 	private RadioButton quadrilatere;
@@ -77,10 +94,12 @@ public class Controller implements Initializable {
 		
 		//Data
 		Terre terre = Read_file.getDataFromCSVFile("src/climatechange/tempanomaly_4x4grid.csv");
+		maxAnomalie = terre.getMaxAnomalie();
+    	minAnomalie = terre.getMinAnomalie();
 		
 		//Create a Pane et graph scene root for the 3D content
         Group root3D = new Group();
-        //Pane pane3D = new Pane(root3D);
+        Group root2D = new Group(); //pour la légende
 
         // Load geometry
         ObjModelImporter objImporter = new ObjModelImporter();
@@ -94,18 +113,32 @@ public class Controller implements Initializable {
         MeshView[] meshViews = objImporter.getImport();
         Group earth = new Group(meshViews);
     	
+        //Initialisation
         
-    	//Initialisation
+        
+        //Légende
+    	Rectangle leg = new Rectangle(1, 1, Color.RED); //attention, pour chaque objet de la légende ajouté, modifier les remove pour
+    	leg.relocate(0.5f, 0.5f);
+    	Circle leg2 = new Circle(10, 10, 3); //attention, pour chaque objet de la légende ajouté, modifier les remove pour
+    	//Line leg3 = new Line(6, 6, 2, 3); //attention, pour chaque objet de la légende ajouté, modifier les remove pour
+    	Circle leg4 = new Circle(3, 3, 0.25); //attention, pour chaque objet de la légende ajouté, modifier les remove pour
+    	
+    	//Shape[] legende = {leg, leg2, leg3, leg4};
+    	//root2D.getChildren().addAll(legende);
+        
+        
     	quadrilatere(earth, terre, 2000);
-    	//TODO Légende
+    	//TODO
+    	//les quadrilateres et histogrammes (Ctrl+F remove) : 0 = terre, 1 = ce cercle, le reste = quadrilateres / histogrammes
+    	//sinon ajouter la légende dans un autre groupe, ne pas bouger ce groupe avec la caméra
+    	//root3D.getChildren().add(leg);
     	//Rectangle rec = new Rectangle (100, 100, Color.RED);
     	//rec.relocate(70, 70);
     	//root3D.getChildren().add(rec);
     	
     	/*TODO
     	 * ajouter une légende en bas à droite du pane
-    	 * enlever le déplacement de la terre avec clic droit dans CameraManager
-    	 * obtenir les coordonnées quand on clique sur la terre
+    	 * vérifier coordonnées quand on clique sur la terre
     	 * obtenir le graphique 2D de la zone correspondante
     	 */
 
@@ -121,10 +154,10 @@ public class Controller implements Initializable {
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
 	               if (quadrilatere.isSelected()) {
 	            	   earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
-	            	   quadrilatere(earth, terre, (int) annees.getValue());
+	            	   quadrilatere(earth, terre, (int) sliderAnnee.getValue());
 	               } else {
 	            	   earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
-	            	   histogramme(earth, terre, (int) annees.getValue());
+	            	   histogramme(earth, terre, (int) sliderAnnee.getValue());
 	               }
 	           }
 	       });
@@ -140,15 +173,10 @@ public class Controller implements Initializable {
         	@Override
         	public void handle(long currentNanotime) {
         		double t = (currentNanotime - startNanoTime) / 1000000000.0; // Correspond au temps écoulé depuis le lancement de l'application (en seconde)
-
-        		System.out.print(t);
-        		System.out.print(" ");
-        		System.out.println(compteur);
-        		
         		if ((t > compteur) ) { // On entre dans cette boucle toutes les "speed.getValue()" secondes
         			if (t < (compteur + 0.5)) {
         				compteur += speed.getValue();
-        				annees.setValue(annees.getValue()+1);
+        				sliderAnnee.setValue(sliderAnnee.getValue()+1);
         			} else { // Dans ce cas, t est trop grand par rapport au compteur donc on donne la valeur de t au compteur
         				compteur = t;
         			}
@@ -159,7 +187,7 @@ public class Controller implements Initializable {
         start_pause.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				if (start_pause.getText().equals("Start") && (annees.getValue() < 2020)) {
+				if (start_pause.getText().equals("Start") && (sliderAnnee.getValue() < 2020)) {
 					start_pause.setText("Pause");
 					animation.start();
 				} else if (start_pause.getText().equals("Pause")){
@@ -170,19 +198,22 @@ public class Controller implements Initializable {
 		});
         
         //Slider "Années"
-    	annees.valueProperty().addListener(new ChangeListener<Number>() {
+    	sliderAnnee.valueProperty().addListener(new ChangeListener<Number>() {
 			@Override
 			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
 				if (oldValue.intValue() != newValue.intValue()) {
-					if (newValue.intValue() == 2020) { //Arrêt de l'animation lorsque le slider est à l'année 2020
+					StringBuilder annee = new StringBuilder();
+					annee.append("Années (");
+					annee.append((int) sliderAnnee.getValue());
+					annee.append(")");
+					labelAnnee.setText(annee.toString());
+					if ((newValue.intValue() == 2020) && start_pause.getText().equals("Pause")) { //Arrêt de l'animation lorsque le slider est à l'année 2020
 						animation.stop();
 						start_pause.setText("Start");
-					}
-					if (quadrilatere.isSelected()) {
+					} else if (quadrilatere.isSelected()) {
 						updateQuadrilatere(earth, terre, newValue.intValue());
-					} else {
-						earth.getChildren().remove(1, earth.getChildren().size()); // Suppression des données précédentes
-						histogramme(earth, terre, newValue.intValue());
+					} else { // Dans ce cas, on a (histogramme.isSelected() == true)
+						updateHistogramme(earth, terre, newValue.intValue());
 					}
 				}
 			}
@@ -192,26 +223,56 @@ public class Controller implements Initializable {
          * obtenir coordonnées latitude et longitude avec le click de la souris
          */
     	
-    	/* INFORMATIONS
-    	 * g.setOnMouseClicked(e->{
+    	/*earth.setOnMouseClicked(e->{
     		PickResult pr = e.getPickResult();
-    		System.out.println(pr.getIntersectedPoint());
-				});
-			g c'est l'objet 3D terre que je load
-				et pr.getIntersectedPoint() c'est le point3D
-					restera qu'à utilisation la rotation et le zoom faire une formule pour obtenir la lattitude et la longitute
-    	 * 
-    	 */
+    		Point3D p = pr.getIntersectedPoint();
+    		System.out.print(p);
+    		System.out.print(" ");
+    		System.out.println(Math.sqrt(Math.pow(p.getX(), 2) + Math.pow(p.getY(), 2) + Math.pow(p.getZ(), 2)));
+    		double[] coordonnees = Coord3dToGeoCoordZone(p.getX(), p.getY(), p.getZ());
+    		String title = "Evolution des anomalies de température de la zone (";
+        	title += coordonnees[0];
+        	title += ", ";
+        	title += coordonnees[1];
+        	title += ")";
+        	chart.setTitle(title);
+				});*/
+			//g c'est l'objet 3D terre que je load et pr.getIntersectedPoint() c'est le point3D
+    		//restera qu'à utilisation la rotation et le zoom faire une formule pour obtenir la lattitude et la longitute
+
         //Graphique 2D
-        pane3D.setOnMouseClicked(new EventHandler<MouseEvent>() {
+        earth.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent me) {
-            	String title = "Evolution des anomalies de température de la zone (";
-            	title += me.getSceneX();
+            	PickResult pr = me.getPickResult();
+        		Point3D p = pr.getIntersectedPoint();
+        		System.out.print(p);
+        		System.out.print(" ");
+        		System.out.println(Math.sqrt(Math.pow(p.getX(), 2) + Math.pow(p.getY(), 2) + Math.pow(p.getZ(), 2)));
+        		double[] coordonnees = Coord3dToGeoCoordZone(p.getX(), p.getY(), p.getZ());
+        		String title = "Evolution des anomalies de température de la zone (";
+            	title += coordonnees[0];
             	title += ", ";
-            	title += me.getSceneY();
+            	title += coordonnees[1];
             	title += ")";
             	chart.setTitle(title);
+            	
+            	//XYChart.Series<Integer, Float> series = new XYChart.Series<Integer, Float>();
+            	//XYChart.Data<Integer, Float> donnee1 = new XYChart.Data<Integer, Float>((int) 1970, (float)15);
+            	//XYChart.Data<Integer, Float> donnee2 = new XYChart.Data<Integer, Float>((int) 1913, (float)25);
+            	XYChart.Series series = new XYChart.Series();
+            	
+            	series.getData().add(new XYChart.Data(2013, 240)); 
+                series.getData().add(new XYChart.Data(2014, 300)); 
+                
+            	//series.getData().add(donnee1);
+            	//series.getData().add(donnee2);
+            	chart.getData().add(series);
+            	
+            	//XYChart.Series<Integer, Float> series = new XYChart.Series<Integer, Float>();
+            	//XYChart.Data<Integer, Float> hey = new XYChart.Data((int) 12, (float) 25);
+            	//series.getData().add(hey);
+            	//chart.getData().add(series);
             }
         });
         
@@ -284,13 +345,12 @@ public class Controller implements Initializable {
         // Create the subscene
         SubScene subscene = new SubScene(root3D, 600, 600, true, SceneAntialiasing.BALANCED);
         subscene.setCamera(camera);
-        subscene.setFill(Color.GREY);
+        subscene.setFill(Color.GREY); 
+        
         pane3D.getChildren().addAll(subscene);
-	}
+	}//TODO fin du initialize
 	
-	/*
-	 * 
-	 */
+	// Permet de passer de coordonnées sphériques en coordonnées cartésiennes
 	public static Point3D geoCoordTo3dCoord(float lat, float lon, float radius) {
         float lat_cor = lat + TEXTURE_LAT_OFFSET;
         float lon_cor = lon + TEXTURE_LON_OFFSET;
@@ -302,10 +362,34 @@ public class Controller implements Initializable {
                         * java.lang.Math.cos(java.lang.Math.toRadians(lat_cor))*radius);
     }
 	
+	// Permet de passer de coordonnées cartésiennes en coordonnées sphériques (pour avoir les coordonnées du centre de la zone la plus proche)
+	public static double[] Coord3dToGeoCoordZone(double x, double y, double z) {
+		double r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2)); // en général proche de 1.009
+		
+		double teta = Math.acos(y/r);
+		double lat = Math.toDegrees(teta)-90;
+		lat = lat - TEXTURE_LAT_OFFSET;
+		//Latitude du centre de la zone la plus proche :
+		int latZone = (((int) (lat+90)/4) * 4) - 88;
+		
+		double phi = Math.atan(-x/z);
+		double lon = Math.toDegrees(phi);
+		lon = lon - TEXTURE_LON_OFFSET;
+		//Longitude du centre de la zone la plus proche :
+		int lonZone = (((int) (lon+180)/4) * 4) - 178;
+		
+		if (latZone > 88) {
+			System.out.println("Vous avez cliqué sur le pôle nord, la zone la plus proche a été sélectionnée");
+			latZone = 88;
+		}
+		
+		double[] retour = {latZone, lonZone};
+		
+	    return retour;
+	}
+	
 	//QUADRILATERE
     private void quadrilatere(Group parent, Terre terre, int annee) {
-    	float max = terre.getMaxAnomalie();
-    	float min = terre.getMinAnomalie();
     	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
         	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
         		Point3D topRight = geoCoordTo3dCoord(lat+4, lon+4, 1.01f);
@@ -316,31 +400,33 @@ public class Controller implements Initializable {
         		Color color;
         		float anomalie = terre.anomalie(lat+2, lon+2, annee);
         		if (anomalie > 0) {
-        			if (anomalie < (float) max/5) {
+        			if (anomalie < (float) maxAnomalie/5) {
            				color = new Color(0.75, 0.5, 0, 0.1);
-           			} else if (anomalie < (float) 2*max/5) {
+           			} else if (anomalie < (float) 2*maxAnomalie/5) {
            				color = new Color(0.75, 0.33, 0, 0.1);
-           			} else if (anomalie < (float) 3*max/5) {
+           			} else if (anomalie < (float) 3*maxAnomalie/5) {
            				color = new Color(0.75, 0.25, 0, 0.1);
-           			} else if (anomalie < (float) 4*max/5) {
+           			} else if (anomalie < (float) 4*maxAnomalie/5) {
            				color = new Color(0.75, 0.13, 0, 0.1);
            			} else {
            				color = new Color(0.75, 0, 0, 0.1);
            			}
         		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
-        			if (anomalie < min/5) {
+        			if (anomalie < minAnomalie/5) {
         				color = new Color(0, 0, 0.2, 0.1);
-        			} else if (anomalie < 2*min/5) {
+        			} else if (anomalie < 2*minAnomalie/5) {
         				color = new Color(0, 0, 0.4, 0.1);
-        			} else if (anomalie < 3*min/5) {
+        			} else if (anomalie < 3*minAnomalie/5) {
         				color = new Color(0, 0, 0.6, 0.1);
-        			} else if (anomalie < 4*min/5) {
+        			} else if (anomalie < 4*minAnomalie/5) {
         				color = new Color(0, 0, 0.8, 0.1);
         			} else {
         				color = new Color(0, 0, 1, 0.1);
         			}
-        		} else { //anomalie == 0
+        		} else if (anomalie == 0){
         			color = new Color(0.5, 0.5, 0.5, 0.1);
+        		} else { // anomalie == Float.NaN
+        			color = Color.TRANSPARENT;
         		}
                 colorMaterial.setDiffuseColor(color);
                 AddQuadrilateral(parent, topRight, bottomRight, bottomLeft, topLeft, colorMaterial);
@@ -350,39 +436,38 @@ public class Controller implements Initializable {
     
     // Modification des quadrilatères au lieu de les supprimer et les recréer à chaque fois
     private void updateQuadrilatere(Group parent, Terre terre, int annee) {
-    	float max = terre.getMaxAnomalie();
-    	float min = terre.getMinAnomalie();
     	for (int i = 1 ; i < parent.getChildren().size() ; i = i + 1) {
     		final PhongMaterial colorMaterial = new PhongMaterial();
     		Color color;
-    		//float anomalie = terre.anomalie(lat+2, lon+2, annee);
     		float anomalie = terre.getListeZones().get(i-1).getListeAnomalies().get(annee - 1880);
     		if (anomalie > 0) {
-    			if (anomalie < (float) max/5) {
+    			if (anomalie < (float) maxAnomalie/5) {
        				color = new Color(0.75, 0.5, 0, 0.1);
-       			} else if (anomalie < (float) 2*max/5) {
+       			} else if (anomalie < (float) 2*maxAnomalie/5) {
        				color = new Color(0.75, 0.33, 0, 0.1);
-       			} else if (anomalie < (float) 3*max/5) {
+       			} else if (anomalie < (float) 3*maxAnomalie/5) {
        				color = new Color(0.75, 0.25, 0, 0.1);
-       			} else if (anomalie < (float) 4*max/5) {
+       			} else if (anomalie < (float) 4*maxAnomalie/5) {
        				color = new Color(0.75, 0.13, 0, 0.1);
        			} else {
        				color = new Color(0.75, 0, 0, 0.1);
        			}
     		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
-    			if (anomalie < min/5) {
+    			if (anomalie < minAnomalie/5) {
     				color = new Color(0, 0, 0.2, 0.1);
-    			} else if (anomalie < 2*min/5) {
+    			} else if (anomalie < 2*minAnomalie/5) {
     				color = new Color(0, 0, 0.4, 0.1);
-    			} else if (anomalie < 3*min/5) {
+    			} else if (anomalie < 3*minAnomalie/5) {
     				color = new Color(0, 0, 0.6, 0.1);
-    			} else if (anomalie < 4*min/5) {
+    			} else if (anomalie < 4*minAnomalie/5) {
     				color = new Color(0, 0, 0.8, 0.1);
     			} else {
     				color = new Color(0, 0, 1, 0.1);
     			}
-    		} else { //anomalie == 0
+    		} else if (anomalie == 0){
     			color = new Color(0.5, 0.5, 0.5, 0.1);
+    		} else { // anomalie == Float.NaN
+    			color = Color.TRANSPARENT;
     		}
             colorMaterial.setDiffuseColor(color);
             final MeshView meshView = (MeshView) parent.getChildren().get(i);
@@ -436,63 +521,134 @@ public class Controller implements Initializable {
     
     //HISTOGRAMME
     private void histogramme (Group parent, Terre terre, int annee) {
-       	float max = terre.getMaxAnomalie();
-       	float min = terre.getMinAnomalie();
        	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
            	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
            		Point3D point1 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
-           		Point3D point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
+           		Point3D point2;
            		final PhongMaterial colorMaterial = new PhongMaterial();
            		Color color;
            		float anomalie = terre.anomalie(lat+2, lon+2, annee);
            		if (anomalie > 0) {
-          			if (anomalie < (float) max/5) {
+          			if (anomalie < (float) maxAnomalie/5) {
            				color = new Color(0.2, 0, 0, 0.1);
            				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.11);
-           			} else if (anomalie < (float) 2*max/5) {
+           			} else if (anomalie < (float) 2*maxAnomalie/5) {
            				color = new Color(0.4, 0, 0, 0.1);
            				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.21);
-           			} else if (anomalie < (float) 3*max/5) {
+           			} else if (anomalie < (float) 3*maxAnomalie/5) {
            				color = new Color(0.6, 0, 0, 0.1);
            				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.31);
-           			} else if (anomalie < (float) 4*max/5) {
+           			} else if (anomalie < (float) 4*maxAnomalie/5) {
            				color = new Color(0.8, 0, 0, 0.1);
            				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.41);
            			} else {
            				color = new Color(1, 0, 0, 0.1);
            				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.51);
            			}
-          			colorMaterial.setDiffuseColor(color);
-                    Cylinder line = createLine(point1, point2);
-                    line.setMaterial(colorMaterial);
-               		parent.getChildren().add(line);
            		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
-           			point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.02);
-           			if (anomalie < min/5) {
+           			if (anomalie < minAnomalie/5) {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.11);
            				color = new Color(0, 0, 0.2, 0.25);
-           			} else if (anomalie < (float) 2*min/5) {
+           			} else if (anomalie < (float) 2*minAnomalie/5) {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.21);
            				color = new Color(0, 0, 0.4, 0.25);
-           			} else if (anomalie < (float) 3*min/5) {
+           			} else if (anomalie < (float) 3*minAnomalie/5) {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.31);
            				color = new Color(0, 0, 0.6, 0.25);
-           			} else if (anomalie < (float) 4*min/5) {
+           			} else if (anomalie < (float) 4*minAnomalie/5) {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.41);
            				color = new Color(0, 0, 0.8, 0.25);
            			} else {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.51);
            				color = new Color(0, 0, 1, 0.25);
            			}
-           			colorMaterial.setDiffuseColor(color);
-                    Cylinder line = createLine(point1, point2);
-                    line.setMaterial(colorMaterial);
-               		parent.getChildren().add(line);
-           		} else {//si anomalie == 0
+           		} else if (anomalie == 0){
            			point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.02);
            			color = new Color(0.5, 0.5, 0.5, 0.1);
-           			colorMaterial.setDiffuseColor(color);
-                    Cylinder line = createLine(point1, point2);
-                    line.setMaterial(colorMaterial);
-               		parent.getChildren().add(line);
+           		} else { // anomalie == Float.NaN
+           			point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
+           			color = Color.TRANSPARENT;
            		}
+           		colorMaterial.setDiffuseColor(color);
+                Cylinder line = createLine(point1, point2);
+                line.setMaterial(colorMaterial);
+           		parent.getChildren().add(line);
            	}
        	}
+    }
+    
+ // Modification des histogrammes au lieu de les supprimer et les recréer à chaque fois
+    private void updateHistogramme (Group parent, Terre terre, int annee) {
+    	int indice = 0; // les histogrammes sont stockés à partir de l'indice 1
+    	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
+           	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
+           		Point3D point1 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
+           		Point3D point2;
+           		final PhongMaterial colorMaterial = new PhongMaterial();
+        		Color color;
+        		float anomalie = terre.getListeZones().get(indice).getListeAnomalies().get(annee - 1880);
+        		if (anomalie > 0) {
+          			if (anomalie < (float) maxAnomalie/5) {
+           				color = new Color(0.2, 0, 0, 0.1);
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.11);
+           			} else if (anomalie < (float) 2*maxAnomalie/5) {
+           				color = new Color(0.4, 0, 0, 0.1);
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.21);
+           			} else if (anomalie < (float) 3*maxAnomalie/5) {
+           				color = new Color(0.6, 0, 0, 0.1);
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.31);
+           			} else if (anomalie < (float) 4*maxAnomalie/5) {
+           				color = new Color(0.8, 0, 0, 0.1);
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.41);
+           			} else {
+           				color = new Color(1, 0, 0, 0.1);
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.51);
+           			}
+           		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
+           			if (anomalie < minAnomalie/5) {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.11);
+           				color = new Color(0, 0, 0.2, 0.25);
+           			} else if (anomalie < (float) 2*minAnomalie/5) {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.21);
+           				color = new Color(0, 0, 0.4, 0.25);
+           			} else if (anomalie < (float) 3*minAnomalie/5) {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.31);
+           				color = new Color(0, 0, 0.6, 0.25);
+           			} else if (anomalie < (float) 4*minAnomalie/5) {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.41);
+           				color = new Color(0, 0, 0.8, 0.25);
+           			} else {
+           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.51);
+           				color = new Color(0, 0, 1, 0.25);
+           			}
+           		} else if (anomalie == 0){
+           			point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.02);
+           			color = new Color(0.5, 0.5, 0.5, 0.1);
+           		} else { // anomalie == Float.NaN
+           			point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
+           			color = Color.TRANSPARENT;
+           		}
+        		colorMaterial.setDiffuseColor(color);
+        		final Cylinder line = (Cylinder) parent.getChildren().get(indice+1); // On prend indice+1 car l'indice 0 correspond aux composants pour l'affichage de la terre
+                line.setMaterial(colorMaterial);
+                
+                Point3D diff = point2.subtract(point1);
+                double height = diff.magnitude();
+                line.setHeight(height);
+                
+                Point3D mid = point2.midpoint(point1);
+                Translate moveToMidpoint = new Translate(mid.getX(), mid.getY(), mid.getZ());
+                line.getTransforms().set(0, moveToMidpoint);
+
+                Point3D yAxis = new Point3D(0, 1, 0);
+                Point3D axisOfRotation = diff.crossProduct(yAxis);
+                double angle = Math.acos(diff.normalize().dotProduct(yAxis));
+                Rotate rotateAroundCenter = new Rotate(-Math.toDegrees(angle), axisOfRotation);
+                line.getTransforms().set(1, rotateAroundCenter);
+                
+           		indice += 1;
+           	}
+    	}
     }
     
     // From Rahel LÃ¼thy : https://netzwerg.ch/blog/2015/03/22/javafx-3d-line/
