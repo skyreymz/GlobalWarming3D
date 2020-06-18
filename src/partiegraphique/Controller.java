@@ -37,10 +37,14 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 import org.junit.rules.Timeout;
 
 import javafx.scene.control.Toggle;
+import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
@@ -87,15 +91,19 @@ public class Controller implements Initializable {
 	private Slider speed;
 	
 	@FXML
-	private LineChart<Integer, Float> chart;
+	private LineChart<String, Float> chart;
+	
+	//@FXML
+	//private NumberAxis xAxis;
+	
+	@FXML
+	private NumberAxis yAxis;
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		
 		//Data
 		Terre terre = Read_file.getDataFromCSVFile("src/climatechange/tempanomaly_4x4grid.csv");
-		maxAnomalie = terre.getMaxAnomalie();
-    	minAnomalie = terre.getMinAnomalie();
 		
 		//Create a Pane et graph scene root for the 3D content
         Group root3D = new Group();
@@ -114,7 +122,9 @@ public class Controller implements Initializable {
         Group earth = new Group(meshViews);
     	
         //Initialisation
-        
+        maxAnomalie = terre.getMaxAnomalie();
+    	minAnomalie = terre.getMinAnomalie();
+        quadrilatere(earth, terre, 2000);
         
         //Légende
     	Rectangle leg = new Rectangle(1, 1, Color.RED); //attention, pour chaque objet de la légende ajouté, modifier les remove pour
@@ -126,8 +136,6 @@ public class Controller implements Initializable {
     	//Shape[] legende = {leg, leg2, leg3, leg4};
     	//root2D.getChildren().addAll(legende);
         
-        
-    	quadrilatere(earth, terre, 2000);
     	//TODO
     	//les quadrilateres et histogrammes (Ctrl+F remove) : 0 = terre, 1 = ce cercle, le reste = quadrilateres / histogrammes
     	//sinon ajouter la légende dans un autre groupe, ne pas bouger ce groupe avec la caméra
@@ -218,27 +226,6 @@ public class Controller implements Initializable {
 				}
 			}
 		});
-        
-        /*TODO
-         * obtenir coordonnées latitude et longitude avec le click de la souris
-         */
-    	
-    	/*earth.setOnMouseClicked(e->{
-    		PickResult pr = e.getPickResult();
-    		Point3D p = pr.getIntersectedPoint();
-    		System.out.print(p);
-    		System.out.print(" ");
-    		System.out.println(Math.sqrt(Math.pow(p.getX(), 2) + Math.pow(p.getY(), 2) + Math.pow(p.getZ(), 2)));
-    		double[] coordonnees = Coord3dToGeoCoordZone(p.getX(), p.getY(), p.getZ());
-    		String title = "Evolution des anomalies de température de la zone (";
-        	title += coordonnees[0];
-        	title += ", ";
-        	title += coordonnees[1];
-        	title += ")";
-        	chart.setTitle(title);
-				});*/
-			//g c'est l'objet 3D terre que je load et pr.getIntersectedPoint() c'est le point3D
-    		//restera qu'à utilisation la rotation et le zoom faire une formule pour obtenir la lattitude et la longitute
 
         //Graphique 2D
         earth.setOnMouseClicked(new EventHandler<MouseEvent>() {
@@ -247,32 +234,41 @@ public class Controller implements Initializable {
             	PickResult pr = me.getPickResult();
         		Point3D p = pr.getIntersectedPoint();
         		System.out.print(p);
+        		System.out.print(" ; Rayon = ");
         		System.out.print(" ");
         		System.out.println(Math.sqrt(Math.pow(p.getX(), 2) + Math.pow(p.getY(), 2) + Math.pow(p.getZ(), 2)));
-        		double[] coordonnees = Coord3dToGeoCoordZone(p.getX(), p.getY(), p.getZ());
-        		String title = "Evolution des anomalies de température de la zone (";
-            	title += coordonnees[0];
-            	title += ", ";
-            	title += coordonnees[1];
-            	title += ")";
-            	chart.setTitle(title);
+        		int[] coordonnees = Coord3dToGeoCoordZone(p.getX(), p.getY(), p.getZ());
+        		StringBuilder title = new StringBuilder(5);
+        		title.append("Evolution des anomalies de température de la zone (");
+            	title.append(coordonnees[0]);
+            	title.append(", ");
+            	title.append(coordonnees[1]);
+            	title.append(")");
+            	chart.setTitle(title.toString());
             	
-            	//XYChart.Series<Integer, Float> series = new XYChart.Series<Integer, Float>();
-            	//XYChart.Data<Integer, Float> donnee1 = new XYChart.Data<Integer, Float>((int) 1970, (float)15);
-            	//XYChart.Data<Integer, Float> donnee2 = new XYChart.Data<Integer, Float>((int) 1913, (float)25);
-            	XYChart.Series series = new XYChart.Series();
+            	//System.out.println(chart.getData().size());
             	
-            	series.getData().add(new XYChart.Data(2013, 240)); 
-                series.getData().add(new XYChart.Data(2014, 300)); 
-                
-            	//series.getData().add(donnee1);
-            	//series.getData().add(donnee2);
+            	//suppression des anciennes données
+            	if (chart.getData().size() > 0) {
+            		chart.getData().remove(0);
+            	}
+            	
+
+            	XYChart.Series<String, Float> series = new XYChart.Series<String, Float>();
+            	List<Float> anomaliesAnnees = terre.anomaliesAnnees((int) coordonnees[0], (int) coordonnees[1]);
+            	int indice = 0;
+            	int compteurAnnee = 1880;
+            	for (int j = 0 ; j < anomaliesAnnees.size() ; j = j + 1) {
+            		float val = anomaliesAnnees.get(j);
+            		if (!Float.isNaN(val)) {
+            			series.getData().add(new XYChart.Data(String.valueOf(compteurAnnee), val));
+            		}
+            		indice += 1;
+            		compteurAnnee += 1;
+            	}
+            	
             	chart.getData().add(series);
-            	
-            	//XYChart.Series<Integer, Float> series = new XYChart.Series<Integer, Float>();
-            	//XYChart.Data<Integer, Float> hey = new XYChart.Data((int) 12, (float) 25);
-            	//series.getData().add(hey);
-            	//chart.getData().add(series);
+            	//System.out.println(chart.getData().size());
             }
         });
         
@@ -363,42 +359,47 @@ public class Controller implements Initializable {
     }
 	
 	// Permet de passer de coordonnées cartésiennes en coordonnées sphériques (pour avoir les coordonnées du centre de la zone la plus proche)
-	public static double[] Coord3dToGeoCoordZone(double x, double y, double z) {
+	public static int[] Coord3dToGeoCoordZone(double x, double y, double z) {
 		double r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2)); // en général proche de 1.009
 		
 		double teta = Math.acos(y/r);
 		double lat = Math.toDegrees(teta)-90;
 		lat = lat - TEXTURE_LAT_OFFSET;
-		//Latitude du centre de la zone la plus proche :
-		int latZone = (((int) (lat+90)/4) * 4) - 88;
-		
-		double phi = Math.atan(-x/z);
-		double lon = Math.toDegrees(phi);
-		lon = lon - TEXTURE_LON_OFFSET;
-		//Longitude du centre de la zone la plus proche :
-		int lonZone = (((int) (lon+180)/4) * 4) - 178;
-		
+		int latZone = (((int) (lat+90)/4) * 4) - 88; //Latitude du centre de la zone la plus proche
 		if (latZone > 88) {
 			System.out.println("Vous avez cliqué sur le pôle nord, la zone la plus proche a été sélectionnée");
 			latZone = 88;
 		}
 		
-		double[] retour = {latZone, lonZone};
+		double phi = Math.atan2(-x, z);
+		double lon = Math.toDegrees(phi);
+		lon = lon - TEXTURE_LON_OFFSET;
+		int lonZone; //Longitude du centre de la zone la plus proche
+		if (lon < -180) { 
+			lonZone = 178;
+		} else {
+			lonZone = (((int) (lon+180)/4) * 4) - 178; 
+		}
+		
+		int[] retour = {latZone, lonZone};
 		
 	    return retour;
 	}
 	
+	/*TODO
+	 * modifier les lat et lon pour cohérence avec milieux des zones
+	 */
 	//QUADRILATERE
     private void quadrilatere(Group parent, Terre terre, int annee) {
-    	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
-        	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
-        		Point3D topRight = geoCoordTo3dCoord(lat+4, lon+4, 1.01f);
-        		Point3D bottomRight = geoCoordTo3dCoord(lat, lon+4, 1.01f);
-        		Point3D bottomLeft = geoCoordTo3dCoord(lat, lon, 1.01f);
-        		Point3D topLeft = geoCoordTo3dCoord(lat+4, lon, 1.01f);
+    	for (int lat = -88 ; lat <= 88 ; lat = lat + 4) { //latitude
+        	for (int lon = -178 ; lon <= 178 ; lon = lon + 4) { //longitude
+        		Point3D topRight = geoCoordTo3dCoord(lat+2, lon+2, 1.01f);
+        		Point3D bottomRight = geoCoordTo3dCoord(lat-2, lon+2, 1.01f);
+        		Point3D bottomLeft = geoCoordTo3dCoord(lat-2, lon-2, 1.01f);
+        		Point3D topLeft = geoCoordTo3dCoord(lat+2, lon-2, 1.01f);
         		final PhongMaterial colorMaterial = new PhongMaterial();
         		Color color;
-        		float anomalie = terre.anomalie(lat+2, lon+2, annee);
+        		float anomalie = terre.anomalie(lat, lon, annee);
         		if (anomalie > 0) {
         			if (anomalie < (float) maxAnomalie/5) {
            				color = new Color(0.75, 0.5, 0, 0.1);
@@ -521,52 +522,52 @@ public class Controller implements Initializable {
     
     //HISTOGRAMME
     private void histogramme (Group parent, Terre terre, int annee) {
-       	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
-           	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
-           		Point3D point1 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
+       	for (int lat = -88 ; lat <= 88 ; lat = lat + 4) { //latitude
+           	for (int lon = -178 ; lon <= 178 ; lon = lon + 4) { //longitude
+           		Point3D point1 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.01);
            		Point3D point2;
            		final PhongMaterial colorMaterial = new PhongMaterial();
            		Color color;
-           		float anomalie = terre.anomalie(lat+2, lon+2, annee);
+           		float anomalie = terre.anomalie(lat, lon, annee);
            		if (anomalie > 0) {
           			if (anomalie < (float) maxAnomalie/5) {
            				color = new Color(0.2, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.11);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.11);
            			} else if (anomalie < (float) 2*maxAnomalie/5) {
            				color = new Color(0.4, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.21);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.21);
            			} else if (anomalie < (float) 3*maxAnomalie/5) {
            				color = new Color(0.6, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.31);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.31);
            			} else if (anomalie < (float) 4*maxAnomalie/5) {
            				color = new Color(0.8, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.41);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.41);
            			} else {
            				color = new Color(1, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.51);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.51);
            			}
            		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
            			if (anomalie < minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.11);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.11);
            				color = new Color(0, 0, 0.2, 0.25);
            			} else if (anomalie < (float) 2*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.21);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.21);
            				color = new Color(0, 0, 0.4, 0.25);
            			} else if (anomalie < (float) 3*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.31);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.31);
            				color = new Color(0, 0, 0.6, 0.25);
            			} else if (anomalie < (float) 4*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.41);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.41);
            				color = new Color(0, 0, 0.8, 0.25);
            			} else {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.51);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.51);
            				color = new Color(0, 0, 1, 0.25);
            			}
            		} else if (anomalie == 0){
-           			point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.02);
+           			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.02);
            			color = new Color(0.5, 0.5, 0.5, 0.1);
            		} else { // anomalie == Float.NaN
-           			point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
+           			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.01);
            			color = Color.TRANSPARENT;
            		}
            		colorMaterial.setDiffuseColor(color);
@@ -580,9 +581,9 @@ public class Controller implements Initializable {
  // Modification des histogrammes au lieu de les supprimer et les recréer à chaque fois
     private void updateHistogramme (Group parent, Terre terre, int annee) {
     	int indice = 0; // les histogrammes sont stockés à partir de l'indice 1
-    	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
-           	for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
-           		Point3D point1 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
+    	for (int lat = -88 ; lat <= 88 ; lat = lat + 4) { //latitude
+           	for (int lon = -178 ; lon <= 178 ; lon = lon + 4) { //longitude
+           		Point3D point1 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.01);
            		Point3D point2;
            		final PhongMaterial colorMaterial = new PhongMaterial();
         		Color color;
@@ -590,42 +591,42 @@ public class Controller implements Initializable {
         		if (anomalie > 0) {
           			if (anomalie < (float) maxAnomalie/5) {
            				color = new Color(0.2, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.11);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.11);
            			} else if (anomalie < (float) 2*maxAnomalie/5) {
            				color = new Color(0.4, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.21);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.21);
            			} else if (anomalie < (float) 3*maxAnomalie/5) {
            				color = new Color(0.6, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.31);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.31);
            			} else if (anomalie < (float) 4*maxAnomalie/5) {
            				color = new Color(0.8, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.41);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.41);
            			} else {
            				color = new Color(1, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.51);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.51);
            			}
            		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
            			if (anomalie < minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.11);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.11);
            				color = new Color(0, 0, 0.2, 0.25);
            			} else if (anomalie < (float) 2*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.21);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.21);
            				color = new Color(0, 0, 0.4, 0.25);
            			} else if (anomalie < (float) 3*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.31);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.31);
            				color = new Color(0, 0, 0.6, 0.25);
            			} else if (anomalie < (float) 4*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.41);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.41);
            				color = new Color(0, 0, 0.8, 0.25);
            			} else {
-           				point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.51);
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.51);
            				color = new Color(0, 0, 1, 0.25);
            			}
            		} else if (anomalie == 0){
-           			point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.02);
+           			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.02);
            			color = new Color(0.5, 0.5, 0.5, 0.1);
            		} else { // anomalie == Float.NaN
-           			point2 = geoCoordTo3dCoord((float) lat+2, (float) lon+2, (float) 1.01);
+           			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.01);
            			color = Color.TRANSPARENT;
            		}
         		colorMaterial.setDiffuseColor(color);

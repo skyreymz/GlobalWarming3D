@@ -59,7 +59,7 @@
                         <CategoryAxis label="Année" side="BOTTOM" />
                      </xAxis>
                      <yAxis>
-                        <NumberAxis label="Anomalie de température" side="LEFT" />
+                        <NumberAxis fx:id="yAxis" label="Anomalie de température" lowerBound="-6.5" side="LEFT" upperBound="9.0" />
                      </yAxis>
                   </LineChart>
                </children>
