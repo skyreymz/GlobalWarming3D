@@ -69,8 +69,57 @@ public class Controller implements Initializable {
     private float maxAnomalie; // Anomalie maximale de température, pour éviter de faire plein de fois l'appel à la méthode terre.getMaxAnomalie()
     private float minAnomalie; // Anomalie minimale de température, pour éviter de faire plein de fois l'appel à la méthode terre.getMinAnomalie()
 	
+    //Couleurs quadrilatères
+	private static final Color COLOR_QUAD_5 = new Color(1, 0, 0, 0.75);
+	private static final Color COLOR_QUAD_4 = new Color(1, 0.15, 0, 0.75);
+	private static final Color COLOR_QUAD_3 = new Color(1, 0.3, 0, 0.75);
+	private static final Color COLOR_QUAD_2 = new Color(1, 0.45, 0, 0.75);
+	private static final Color COLOR_QUAD_1 = new Color(1, 0.6, 0, 0.75);
+	private static final Color COLOR_QUAD_0 = new Color(0.75, 0.75, 0.75, 0.75);
+	private static final Color COLOR_QUAD_n1 = new Color(0, 0.29, 1, 0.75);
+	private static final Color COLOR_QUAD_n2 = new Color(0, 0.22, 1, 0.75);
+	private static final Color COLOR_QUAD_n3 = new Color(0, 0.15, 1, 0.75);
+	private static final Color COLOR_QUAD_n4 = new Color(0, 0.07, 1, 0.75);
+	private static final Color COLOR_QUAD_n5 = new Color(0, 0, 1, 0.75);
+	
+	//Couleurs histogrammes
+    
+    
 	@FXML
 	private Pane pane3D;
+	
+	@FXML
+	private Pane pane5;
+	
+	@FXML
+	private Pane pane4;
+	
+	@FXML
+	private Pane pane3;
+	
+	@FXML
+	private Pane pane2;
+	
+	@FXML
+	private Pane pane1;
+	
+	@FXML
+	private Pane pane0;
+	
+	@FXML
+	private Pane pane_1;
+	
+	@FXML
+	private Pane pane_2;
+	
+	@FXML
+	private Pane pane_3;
+	
+	@FXML
+	private Pane pane_4;
+	
+	@FXML
+	private Pane pane_5;
 	
 	@FXML
 	private Label labelAnnee;
@@ -104,10 +153,11 @@ public class Controller implements Initializable {
 		
 		//Data
 		Terre terre = Read_file.getDataFromCSVFile("src/climatechange/tempanomaly_4x4grid.csv");
-		
+		maxAnomalie = terre.getMaxAnomalie();
+    	minAnomalie = terre.getMinAnomalie();
+    	
 		//Create a Pane et graph scene root for the 3D content
         Group root3D = new Group();
-        Group root2D = new Group(); //pour la légende
 
         // Load geometry
         ObjModelImporter objImporter = new ObjModelImporter();
@@ -121,34 +171,22 @@ public class Controller implements Initializable {
         MeshView[] meshViews = objImporter.getImport();
         Group earth = new Group(meshViews);
     	
+        //Mise en place de la légende
+        pane5.setStyle("-fx-background-color: rgb(255, 0, 0)");
+    	pane4.setStyle("-fx-background-color: rgb(255, 38, 0)");
+    	pane4.setStyle("-fx-background-color: rgb(255, 77, 0)");
+    	pane3.setStyle("-fx-background-color: rgb(255, 115, 0)");
+    	pane2.setStyle("-fx-background-color: rgb(255, 153, 0)");
+    	pane1.setStyle("-fx-background-color: rgb(255, 191, 0)");
+    	pane0.setStyle("-fx-background-color: rgb(255, 255, 255)");
+    	pane_1.setStyle("-fx-background-color: rgb(0, 125, 255)");
+    	pane_2.setStyle("-fx-background-color: rgb(0, 100, 255)");
+    	pane_3.setStyle("-fx-background-color: rgb(0, 75, 255)");
+    	pane_4.setStyle("-fx-background-color: rgb(0, 50, 255)");
+    	pane_5.setStyle("-fx-background-color: rgb(0, 25, 255)");
+        
         //Initialisation
-        maxAnomalie = terre.getMaxAnomalie();
-    	minAnomalie = terre.getMinAnomalie();
         quadrilatere(earth, terre, 2000);
-        
-        //Légende
-    	Rectangle leg = new Rectangle(1, 1, Color.RED); //attention, pour chaque objet de la légende ajouté, modifier les remove pour
-    	leg.relocate(0.5f, 0.5f);
-    	Circle leg2 = new Circle(10, 10, 3); //attention, pour chaque objet de la légende ajouté, modifier les remove pour
-    	//Line leg3 = new Line(6, 6, 2, 3); //attention, pour chaque objet de la légende ajouté, modifier les remove pour
-    	Circle leg4 = new Circle(3, 3, 0.25); //attention, pour chaque objet de la légende ajouté, modifier les remove pour
-    	
-    	//Shape[] legende = {leg, leg2, leg3, leg4};
-    	//root2D.getChildren().addAll(legende);
-        
-    	//TODO
-    	//les quadrilateres et histogrammes (Ctrl+F remove) : 0 = terre, 1 = ce cercle, le reste = quadrilateres / histogrammes
-    	//sinon ajouter la légende dans un autre groupe, ne pas bouger ce groupe avec la caméra
-    	//root3D.getChildren().add(leg);
-    	//Rectangle rec = new Rectangle (100, 100, Color.RED);
-    	//rec.relocate(70, 70);
-    	//root3D.getChildren().add(rec);
-    	
-    	/*TODO
-    	 * ajouter une légende en bas à droite du pane
-    	 * vérifier coordonnées quand on clique sur la terre
-    	 * obtenir le graphique 2D de la zone correspondante
-    	 */
 
 		//Mise en place du décochage des radio boutons "Histogramme" et "Quadrilatère"
     	ToggleGroup group = new ToggleGroup();
@@ -226,18 +264,20 @@ public class Controller implements Initializable {
 				}
 			}
 		});
-
-        //Graphique 2D
-        earth.setOnMouseClicked(new EventHandler<MouseEvent>() {
+    	
+        earth.setOnMousePressed(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent me) {
             	PickResult pr = me.getPickResult();
         		Point3D p = pr.getIntersectedPoint();
+        		//TODO here
         		System.out.print(p);
         		System.out.print(" ; Rayon = ");
         		System.out.print(" ");
         		System.out.println(Math.sqrt(Math.pow(p.getX(), 2) + Math.pow(p.getY(), 2) + Math.pow(p.getZ(), 2)));
         		int[] coordonnees = Coord3dToGeoCoordZone(p.getX(), p.getY(), p.getZ());
+        		
+        		//graphique
         		StringBuilder title = new StringBuilder(5);
         		title.append("Evolution des anomalies de température de la zone (");
             	title.append(coordonnees[0]);
@@ -246,9 +286,7 @@ public class Controller implements Initializable {
             	title.append(")");
             	chart.setTitle(title.toString());
             	
-            	//System.out.println(chart.getData().size());
-            	
-            	//suppression des anciennes données
+            	// Suppression des anciennes données
             	if (chart.getData().size() > 0) {
             		chart.getData().remove(0);
             	}
@@ -386,50 +424,46 @@ public class Controller implements Initializable {
 	    return retour;
 	}
 	
-	/*TODO
-	 * modifier les lat et lon pour cohérence avec milieux des zones
-	 */
+
 	//QUADRILATERE
     private void quadrilatere(Group parent, Terre terre, int annee) {
     	for (int lat = -88 ; lat <= 88 ; lat = lat + 4) { //latitude
         	for (int lon = -178 ; lon <= 178 ; lon = lon + 4) { //longitude
-        		Point3D topRight = geoCoordTo3dCoord(lat+2, lon+2, 1.01f);
-        		Point3D bottomRight = geoCoordTo3dCoord(lat-2, lon+2, 1.01f);
-        		Point3D bottomLeft = geoCoordTo3dCoord(lat-2, lon-2, 1.01f);
-        		Point3D topLeft = geoCoordTo3dCoord(lat+2, lon-2, 1.01f);
-        		final PhongMaterial colorMaterial = new PhongMaterial();
-        		Color color;
         		float anomalie = terre.anomalie(lat, lon, annee);
+        		final PhongMaterial colorMaterial = new PhongMaterial();
         		if (anomalie > 0) {
-        			if (anomalie < (float) maxAnomalie/5) {
-           				color = new Color(0.75, 0.5, 0, 0.1);
-           			} else if (anomalie < (float) 2*maxAnomalie/5) {
-           				color = new Color(0.75, 0.33, 0, 0.1);
-           			} else if (anomalie < (float) 3*maxAnomalie/5) {
-           				color = new Color(0.75, 0.25, 0, 0.1);
-           			} else if (anomalie < (float) 4*maxAnomalie/5) {
-           				color = new Color(0.75, 0.13, 0, 0.1);
-           			} else {
-           				color = new Color(0.75, 0, 0, 0.1);
-           			}
-        		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
-        			if (anomalie < minAnomalie/5) {
-        				color = new Color(0, 0, 0.2, 0.1);
-        			} else if (anomalie < 2*minAnomalie/5) {
-        				color = new Color(0, 0, 0.4, 0.1);
-        			} else if (anomalie < 3*minAnomalie/5) {
-        				color = new Color(0, 0, 0.6, 0.1);
-        			} else if (anomalie < 4*minAnomalie/5) {
-        				color = new Color(0, 0, 0.8, 0.1);
-        			} else {
-        				color = new Color(0, 0, 1, 0.1);
-        			}
-        		} else if (anomalie == 0){
-        			color = new Color(0.5, 0.5, 0.5, 0.1);
-        		} else { // anomalie == Float.NaN
-        			color = Color.TRANSPARENT;
-        		}
-                colorMaterial.setDiffuseColor(color);
+            		if (anomalie < (float) maxAnomalie/5) {
+            			colorMaterial.setDiffuseColor(COLOR_QUAD_1);
+               		} else if (anomalie < (float) 2*maxAnomalie/5) {
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_2);
+               		} else if (anomalie < (float) 3*maxAnomalie/5) {
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_3);
+               		} else if (anomalie < (float) 4*maxAnomalie/5) {
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_4);
+               		} else {
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_5);
+               		}
+            	} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
+            		if (anomalie > minAnomalie/5) {
+            			colorMaterial.setDiffuseColor(COLOR_QUAD_n1);
+            		} else if (anomalie > 2*minAnomalie/5) {
+            			colorMaterial.setDiffuseColor(COLOR_QUAD_n2);
+            		} else if (anomalie > 3*minAnomalie/5) {
+            			colorMaterial.setDiffuseColor(COLOR_QUAD_n3);
+            		} else if (anomalie > 4*minAnomalie/5) {
+            			colorMaterial.setDiffuseColor(COLOR_QUAD_n4);
+            		} else {
+            			colorMaterial.setDiffuseColor(COLOR_QUAD_n5);
+            		}
+            	} else if (anomalie == 0) {
+            		colorMaterial.setDiffuseColor(COLOR_QUAD_0);
+            	} else {
+            		colorMaterial.setDiffuseColor(Color.TRANSPARENT);
+            	}
+        		Point3D topRight = geoCoordTo3dCoord(lat+2, lon+2, 1.01f);
+            	Point3D bottomRight = geoCoordTo3dCoord(lat-2, lon+2, 1.01f);
+            	Point3D bottomLeft = geoCoordTo3dCoord(lat-2, lon-2, 1.01f);
+            	Point3D topLeft = geoCoordTo3dCoord(lat+2, lon-2, 1.01f);
                 AddQuadrilateral(parent, topRight, bottomRight, bottomLeft, topLeft, colorMaterial);
         	}
     	}
@@ -438,39 +472,37 @@ public class Controller implements Initializable {
     // Modification des quadrilatères au lieu de les supprimer et les recréer à chaque fois
     private void updateQuadrilatere(Group parent, Terre terre, int annee) {
     	for (int i = 1 ; i < parent.getChildren().size() ; i = i + 1) {
-    		final PhongMaterial colorMaterial = new PhongMaterial();
-    		Color color;
     		float anomalie = terre.getListeZones().get(i-1).getListeAnomalies().get(annee - 1880);
+    		final PhongMaterial colorMaterial = new PhongMaterial();
     		if (anomalie > 0) {
-    			if (anomalie < (float) maxAnomalie/5) {
-       				color = new Color(0.75, 0.5, 0, 0.1);
-       			} else if (anomalie < (float) 2*maxAnomalie/5) {
-       				color = new Color(0.75, 0.33, 0, 0.1);
-       			} else if (anomalie < (float) 3*maxAnomalie/5) {
-       				color = new Color(0.75, 0.25, 0, 0.1);
-       			} else if (anomalie < (float) 4*maxAnomalie/5) {
-       				color = new Color(0.75, 0.13, 0, 0.1);
-       			} else {
-       				color = new Color(0.75, 0, 0, 0.1);
-       			}
-    		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
-    			if (anomalie < minAnomalie/5) {
-    				color = new Color(0, 0, 0.2, 0.1);
-    			} else if (anomalie < 2*minAnomalie/5) {
-    				color = new Color(0, 0, 0.4, 0.1);
-    			} else if (anomalie < 3*minAnomalie/5) {
-    				color = new Color(0, 0, 0.6, 0.1);
-    			} else if (anomalie < 4*minAnomalie/5) {
-    				color = new Color(0, 0, 0.8, 0.1);
-    			} else {
-    				color = new Color(0, 0, 1, 0.1);
-    			}
-    		} else if (anomalie == 0){
-    			color = new Color(0.5, 0.5, 0.5, 0.1);
-    		} else { // anomalie == Float.NaN
-    			color = Color.TRANSPARENT;
-    		}
-            colorMaterial.setDiffuseColor(color);
+        		if (anomalie < (float) maxAnomalie/5) {
+        			colorMaterial.setDiffuseColor(COLOR_QUAD_1);
+           		} else if (anomalie < (float) 2*maxAnomalie/5) {
+           			colorMaterial.setDiffuseColor(COLOR_QUAD_2);
+           		} else if (anomalie < (float) 3*maxAnomalie/5) {
+           			colorMaterial.setDiffuseColor(COLOR_QUAD_3);
+           		} else if (anomalie < (float) 4*maxAnomalie/5) {
+           			colorMaterial.setDiffuseColor(COLOR_QUAD_4);
+           		} else {
+           			colorMaterial.setDiffuseColor(COLOR_QUAD_5);
+           		}
+        	} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
+        		if (anomalie > minAnomalie/5) {
+        			colorMaterial.setDiffuseColor(COLOR_QUAD_n1);
+        		} else if (anomalie > 2*minAnomalie/5) {
+        			colorMaterial.setDiffuseColor(COLOR_QUAD_n2);
+        		} else if (anomalie > 3*minAnomalie/5) {
+        			colorMaterial.setDiffuseColor(COLOR_QUAD_n3);
+        		} else if (anomalie > 4*minAnomalie/5) {
+        			colorMaterial.setDiffuseColor(COLOR_QUAD_n4);
+        		} else {
+        			colorMaterial.setDiffuseColor(COLOR_QUAD_n5);
+        		}
+        	} else if(anomalie == 0) {
+        		colorMaterial.setDiffuseColor(COLOR_QUAD_0);
+        	} else {
+        		colorMaterial.setDiffuseColor(Color.TRANSPARENT);
+        	}
             final MeshView meshView = (MeshView) parent.getChildren().get(i);
             meshView.setMaterial(colorMaterial);
     	}
@@ -522,137 +554,133 @@ public class Controller implements Initializable {
     
     //HISTOGRAMME
     private void histogramme (Group parent, Terre terre, int annee) {
+    	//Mise en place de la légende :
        	for (int lat = -88 ; lat <= 88 ; lat = lat + 4) { //latitude
            	for (int lon = -178 ; lon <= 178 ; lon = lon + 4) { //longitude
            		Point3D point1 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.01);
            		Point3D point2;
-           		final PhongMaterial colorMaterial = new PhongMaterial();
-           		Color color;
            		float anomalie = terre.anomalie(lat, lon, annee);
+           		final PhongMaterial colorMaterial = new PhongMaterial();
            		if (anomalie > 0) {
-          			if (anomalie < (float) maxAnomalie/5) {
-           				color = new Color(0.2, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.11);
-           			} else if (anomalie < (float) 2*maxAnomalie/5) {
-           				color = new Color(0.4, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.21);
-           			} else if (anomalie < (float) 3*maxAnomalie/5) {
-           				color = new Color(0.6, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.31);
-           			} else if (anomalie < (float) 4*maxAnomalie/5) {
-           				color = new Color(0.8, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.41);
-           			} else {
-           				color = new Color(1, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.51);
-           			}
-           		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
-           			if (anomalie < minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.11);
-           				color = new Color(0, 0, 0.2, 0.25);
-           			} else if (anomalie < (float) 2*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.21);
-           				color = new Color(0, 0, 0.4, 0.25);
-           			} else if (anomalie < (float) 3*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.31);
-           				color = new Color(0, 0, 0.6, 0.25);
-           			} else if (anomalie < (float) 4*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.41);
-           				color = new Color(0, 0, 0.8, 0.25);
-           			} else {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.51);
-           				color = new Color(0, 0, 1, 0.25);
-           			}
-           		} else if (anomalie == 0){
-           			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.02);
-           			color = new Color(0.5, 0.5, 0.5, 0.1);
-           		} else { // anomalie == Float.NaN
-           			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.01);
-           			color = Color.TRANSPARENT;
-           		}
-           		colorMaterial.setDiffuseColor(color);
+              		if (anomalie < (float) maxAnomalie/5) {
+              			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.04);
+              			colorMaterial.setDiffuseColor(COLOR_QUAD_1);
+               		} else if (anomalie < (float) 2*maxAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.07);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_2);
+               		} else if (anomalie < (float) 3*maxAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.1);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_3);
+               		} else if (anomalie < (float) 4*maxAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.13);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_4);
+               		} else {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.16);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_5);
+               		}
+               	} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
+               		if (anomalie > minAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.04);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n1);
+               		} else if (anomalie > (float) 2*minAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.07);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n2);
+               		} else if (anomalie > (float) 3*minAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.1);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n3);
+               		} else if (anomalie > (float) 4*minAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.13);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n4);
+               		} else {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.16);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n5);
+               		}
+               	} else if (anomalie == 0) {
+               		point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.02);
+               		colorMaterial.setDiffuseColor(COLOR_QUAD_0);
+               	} else {
+               		point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.02);
+               		colorMaterial.setDiffuseColor(Color.TRANSPARENT);
+               	}
                 Cylinder line = createLine(point1, point2);
                 line.setMaterial(colorMaterial);
-           		parent.getChildren().add(line);
+               	parent.getChildren().add(line);
            	}
        	}
     }
     
- // Modification des histogrammes au lieu de les supprimer et les recréer à chaque fois
+    // Modification des histogrammes au lieu de les supprimer et les recréer à chaque fois
     private void updateHistogramme (Group parent, Terre terre, int annee) {
-    	int indice = 0; // les histogrammes sont stockés à partir de l'indice 1
+    	int indice = 0;
     	for (int lat = -88 ; lat <= 88 ; lat = lat + 4) { //latitude
            	for (int lon = -178 ; lon <= 178 ; lon = lon + 4) { //longitude
            		Point3D point1 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.01);
            		Point3D point2;
-           		final PhongMaterial colorMaterial = new PhongMaterial();
-        		Color color;
         		float anomalie = terre.getListeZones().get(indice).getListeAnomalies().get(annee - 1880);
+        		final PhongMaterial colorMaterial = new PhongMaterial();
         		if (anomalie > 0) {
-          			if (anomalie < (float) maxAnomalie/5) {
-           				color = new Color(0.2, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.11);
-           			} else if (anomalie < (float) 2*maxAnomalie/5) {
-           				color = new Color(0.4, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.21);
-           			} else if (anomalie < (float) 3*maxAnomalie/5) {
-           				color = new Color(0.6, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.31);
-           			} else if (anomalie < (float) 4*maxAnomalie/5) {
-           				color = new Color(0.8, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.41);
-           			} else {
-           				color = new Color(1, 0, 0, 0.1);
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.51);
-           			}
-           		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
-           			if (anomalie < minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.11);
-           				color = new Color(0, 0, 0.2, 0.25);
-           			} else if (anomalie < (float) 2*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.21);
-           				color = new Color(0, 0, 0.4, 0.25);
-           			} else if (anomalie < (float) 3*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.31);
-           				color = new Color(0, 0, 0.6, 0.25);
-           			} else if (anomalie < (float) 4*minAnomalie/5) {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.41);
-           				color = new Color(0, 0, 0.8, 0.25);
-           			} else {
-           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.51);
-           				color = new Color(0, 0, 1, 0.25);
-           			}
-           		} else if (anomalie == 0){
-           			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.02);
-           			color = new Color(0.5, 0.5, 0.5, 0.1);
-           		} else { // anomalie == Float.NaN
-           			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.01);
-           			color = Color.TRANSPARENT;
-           		}
-        		colorMaterial.setDiffuseColor(color);
-        		final Cylinder line = (Cylinder) parent.getChildren().get(indice+1); // On prend indice+1 car l'indice 0 correspond aux composants pour l'affichage de la terre
+           			if (anomalie < (float) maxAnomalie/5) {
+           				point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.04);
+           				colorMaterial.setDiffuseColor(COLOR_QUAD_1);
+               		} else if (anomalie < (float) 2*maxAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.07);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_2);
+               		} else if (anomalie < (float) 3*maxAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.1);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_3);
+               		} else if (anomalie < (float) 4*maxAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.13);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_4);
+               		} else {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.16);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_5);
+               		}
+        		} else if (anomalie < 0) { //On sait ici que anomalie et min sont négatives
+               		if (anomalie > minAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.04);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n1);
+               		} else if (anomalie > (float) 2*minAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.07);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n2);
+               		} else if (anomalie > (float) 3*minAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.1);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n3);
+               		} else if (anomalie > (float) 4*minAnomalie/5) {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.13);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n4);
+               		} else {
+               			point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.16);
+               			colorMaterial.setDiffuseColor(COLOR_QUAD_n5);
+               		}
+               	} else if(anomalie == 0) {
+               		point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.02);
+               		colorMaterial.setDiffuseColor(COLOR_QUAD_0);
+               	} else {
+               		point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.02);
+               		colorMaterial.setDiffuseColor(Color.TRANSPARENT);
+               	}
+            	final Cylinder line = (Cylinder) parent.getChildren().get(indice+1); //On prend indice+1 car l'indice 0 correspond aux composants pour l'affichage de la terre
                 line.setMaterial(colorMaterial);
-                
+                    
                 Point3D diff = point2.subtract(point1);
                 double height = diff.magnitude();
                 line.setHeight(height);
-                
+                    
                 Point3D mid = point2.midpoint(point1);
                 Translate moveToMidpoint = new Translate(mid.getX(), mid.getY(), mid.getZ());
                 line.getTransforms().set(0, moveToMidpoint);
-
                 Point3D yAxis = new Point3D(0, 1, 0);
                 Point3D axisOfRotation = diff.crossProduct(yAxis);
                 double angle = Math.acos(diff.normalize().dotProduct(yAxis));
                 Rotate rotateAroundCenter = new Rotate(-Math.toDegrees(angle), axisOfRotation);
                 line.getTransforms().set(1, rotateAroundCenter);
-                
-           		indice += 1;
-           	}
+                indice += 1;
+        	}
     	}
     }
     
     // From Rahel LÃ¼thy : https://netzwerg.ch/blog/2015/03/22/javafx-3d-line/
+    // Pour les fonctions histogramme et updateHistogramme
     public Cylinder createLine(Point3D origin, Point3D target) {
         Point3D yAxis = new Point3D(0, 1, 0);
         Point3D diff = target.subtract(origin);
@@ -668,6 +696,8 @@ public class Controller implements Initializable {
         Cylinder line = new Cylinder(0.01f, height);
 
         line.getTransforms().addAll(moveToMidpoint, rotateAroundCenter);
+        
+        line.setRadius(0.0075); // Rayon du cylindre
 
         return line;
     }

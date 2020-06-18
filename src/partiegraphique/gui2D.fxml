@@ -20,7 +20,22 @@
          <children>
             <VBox alignment="TOP_CENTER">
                <children>
-                  <Pane fx:id="pane3D" prefHeight="600.0" prefWidth="600.0" />
+                  <Pane prefHeight="600.0" prefWidth="600.0">
+                     <children>
+                        <Pane fx:id="pane3D" prefHeight="600.0" prefWidth="600.0" />
+                        <Pane fx:id="pane5" layoutX="574.0" layoutY="200.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane4" layoutX="574.0" layoutY="218.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane3" layoutX="574.0" layoutY="236.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane2" layoutX="574.0" layoutY="254.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane1" layoutX="574.0" layoutY="272.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane0" layoutX="574.0" layoutY="290.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane_1" layoutX="574.0" layoutY="308.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane_2" layoutX="574.0" layoutY="326.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane_3" layoutX="574.0" layoutY="344.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane_4" layoutX="574.0" layoutY="362.0" prefHeight="18.0" prefWidth="18.0" />
+                        <Pane fx:id="pane_5" layoutX="574.0" layoutY="380.0" prefHeight="18.0" prefWidth="18.0" />
+                     </children>
+                  </Pane>
                </children>
             </VBox>
             <Separator orientation="VERTICAL" />

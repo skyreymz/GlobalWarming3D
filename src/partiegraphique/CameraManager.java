@@ -125,10 +125,8 @@ public class CameraManager {
             @Override
             public void handle(KeyEvent event) {
                 switch (event.getCode()) {
-                    case ALT: //remet la terre dans sa position initiale
-
+                    case ALT:
                         camera.setTranslateZ(CAMERA_INITIAL_DISTANCE);
-
                         ry.setAngle(CAMERA_INITIAL_Y_ANGLE);
                         rx.setAngle(CAMERA_INITIAL_X_ANGLE);
                         break;
