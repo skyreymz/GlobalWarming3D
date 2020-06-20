@@ -13,7 +13,7 @@ public class SimpleTest {
 	public void setUp() throws Exception {
         try
         {
-            terre = Read_file.getDataFromCSVFile("src/climatechange/tempanomaly_4x4grid.csv");
+            terre = Read_file.getDataFromCSVFile("src/partieApplicative/tempanomaly_4x4grid.csv");
         }
         catch (Exception e) {
         	e.printStackTrace();

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 public class Read_file {
 	
 	public static Terre getDataFromCSVFile(String path) {
-		// Paramètres d'entrée de la classe Terre
+		// Variables pour les paramètres d'entrée de la classe Terre
 		Float maxAnomalie = Float.NEGATIVE_INFINITY;
 		Float minAnomalie = Float.POSITIVE_INFINITY;
 		List<String> listeAnnees = new ArrayList<String>();

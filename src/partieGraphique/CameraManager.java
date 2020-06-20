@@ -17,7 +17,7 @@ public class CameraManager {
     private static final double CAMERA_MIN_X_ANGLE = -90;
     private static final double CAMERA_MAX_X_ANGLE = 90;
     private static final double CAMERA_NEAR_CLIP = 0.1;
-    private static final double CAMERA_FAR_CLIP = 10000.0;
+    private static final double CAMERA_FAR_CLIP = 10.0;
     private static final double CONTROL_MULTIPLIER = 0.1;
     private static final double MOUSE_SPEED = 0.05;
     private static final double ROTATION_SPEED = 2.0;
@@ -60,6 +60,7 @@ public class CameraManager {
 
     private void handleMouse(Node mainRoot, final Node root) {
 
+    	// Evenement lié au clic de la souris
         mainRoot.setOnMousePressed(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent me) {
@@ -72,6 +73,8 @@ public class CameraManager {
                 mainRoot.requestFocus();
             }
         });
+        
+        // Evenement lié au déplacement de la souris (lorsque le clic est enclenché)
         mainRoot.setOnMouseDragged(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent me) {
@@ -100,6 +103,8 @@ public class CameraManager {
                 }
             }
         });
+        
+        // Evenement lié au scroll de la roulette de la souris
         mainRoot.setOnScroll(new EventHandler<ScrollEvent>() {
             @Override
             public void handle(ScrollEvent event) {
@@ -122,6 +127,7 @@ public class CameraManager {
     }
 
     private void handleKeyboard(Node mainRoot, final Node root) {
+    	// Evenement lié à l'appui d'une touche du clavier
         mainRoot.setOnKeyPressed(new EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent event) {
