@@ -22,20 +22,11 @@ import javafx.scene.shape.MeshView;
 import javafx.scene.shape.TriangleMesh;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
-
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.List;
-
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Toggle;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
-
-import com.interactivemesh.jfx.importer.ImportException;
-import com.interactivemesh.jfx.importer.obj.ObjModelImporter;
-
 import javafx.scene.SubScene;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Button;
@@ -44,6 +35,11 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.List;
+import com.interactivemesh.jfx.importer.ImportException;
+import com.interactivemesh.jfx.importer.obj.ObjModelImporter;
 
 public class Controller implements Initializable {
 	private static final float TEXTURE_LAT_OFFSET = -0.2f;
