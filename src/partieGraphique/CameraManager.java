@@ -1,4 +1,4 @@
-package partiegraphique;
+package partieGraphique;
 
 import javafx.event.EventHandler;
 import javafx.scene.*;

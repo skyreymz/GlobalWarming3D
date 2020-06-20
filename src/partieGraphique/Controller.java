@@ -1,8 +1,8 @@
-package partiegraphique;
+package partieGraphique;
 
 //TODO trier les import
 
-import climatechange.*;
+import partieApplicative.*;
 import javafx.animation.AnimationTimer;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -51,6 +51,8 @@ public class Controller implements Initializable {
     
     private float maxAnomalie; // Anomalie maximale de température, pour éviter d'effectuer plusieurs fois l'appel à la méthode terre.getMaxAnomalie()
     private float minAnomalie; // Anomalie minimale de température, pour éviter d'effectuer plusieurs fois l'appel à la méthode terre.getMinAnomalie()
+    
+    private long timePressed; // Pour connaître la durée d'un clic
 	
     private static final Color COLOR_0 = new Color(0.75, 0.75, 0.75, 0.75);
     
@@ -155,8 +157,11 @@ public class Controller implements Initializable {
     	buttonQuadrilatere.setSelected(true);
     	buttonHistogramme.setToggleGroup(group);
     	
+    	
+    	// DONNEES
+    	
 		// Données concernant les anomalies de température
-		Terre terre = Read_file.getDataFromCSVFile("src/climatechange/tempanomaly_4x4grid.csv");
+		Terre terre = Read_file.getDataFromCSVFile("src/partieApplicative/tempanomaly_4x4grid.csv");
 		maxAnomalie = terre.getMaxAnomalie();
     	minAnomalie = terre.getMinAnomalie();
     	
@@ -175,8 +180,17 @@ public class Controller implements Initializable {
         MeshView[] meshViewsCouleur = objCouleurImporter.getImport();
         MeshView[] meshViewsGris = objGrisImporter.getImport();
         
+        
+        // GROUPES
+        
         // Groupe parent de la scène 3D
         Group root3D = new Group();
+        /* Gestion de root3D :
+         * L'indice 0 de root3D.getChildren() correspondra à la structure de la terre (soit en couleur, soit en gris)
+         * L'indice 1 de root3D.getChildren() correspondra à la lumière ambiante
+         * L'indice 2 de root3D.getChildren() correspondra à cameraXform (de CameraManager) permettant l'initialisation de la caméra
+         * L'indice 3 de root3D.getChildren() correspondra aux formes géométriques liées aux anomalies de températures (soit les quadrilatères, soit les histogrammes)
+         */
         
         // Groupes enfants
         Group earthCouleur = new Group(meshViewsCouleur); // contient la structure de la Terre (en couleur)
@@ -184,29 +198,49 @@ public class Controller implements Initializable {
         Group quad = new Group(); // Groupe des quadrilatères pour une certaine année
         Group histo = new Group(); // Groupe des histogrammes pour une certaine année
         
-        // Initialisation des deux types de visualisation pour l'année 2000
-        quadrilatere(quad, terre, 2000);
-        histogramme(histo, terre, 2000);
         
-        // Initialisation de la terre en couleur
+        // INITIALISATION
+        
+        // Ajout des quadrilatères dans le groupe quad et des histogrammes dans le groupe histo (anomalies correspondantes à l'année 2000)
+        putQuadrilatereEnfant(quad, terre, 2000);
+        putHistogramEnfant(histo, terre, 2000);
+        
+        // Ajout de la terre en couleur dans le groupe parent de la scène 3D
         root3D.getChildren().add(earthCouleur); // Ajout de earth (en couleur) à l'indice 0 de root3D.getChildren()
         checkBoxTerreCouleur.setSelected(true);
         
-        // Ajout d'une lumière ambiante
+        // Ajout d'une lumière ambiante dans le groupe parent de la scène 3D
         AmbientLight ambientLight = new AmbientLight(Color.WHITE);
         ambientLight.getScope().addAll(root3D);
         root3D.getChildren().add(ambientLight); // ajout de ambientLight à l'indice 1 de root3D.getChildren()
         
-        // Camera
+        // Mise en place d'une camera
         PerspectiveCamera camera = new PerspectiveCamera(true);
-        new CameraManager(camera, pane3D, root3D); // ajout de cameraXform (dans la classe CameraManager) à l'indice 2 de root3D.getChildren()
+        new CameraManager(camera, pane3D, root3D); // cette ligne de code provoque l'ajout de cameraXform (de la classe CameraManager) à l'indice 2 de root3D.getChildren()
         
-        SubScene subscene = new SubScene(root3D, 600, 600, true, SceneAntialiasing.BALANCED);
-        subscene.setCamera(camera);
-        subscene.setFill(Color.gray(0.3)); 
-        pane3D.getChildren().addAll(subscene);
         
-        // Listener lié à la checkBox "checkBoxTerreCouleur"
+        // Animation
+     	final long startNanoTime = System.nanoTime();
+        AnimationTimer animation = new AnimationTimer() {
+          	double compteur = speed.getValue(); // Permet d'incrémenter les années au bon moment
+           	@Override
+           	public void handle(long currentNanotime) {
+           		double t = (currentNanotime - startNanoTime) / 1000000000.0; // Correspond au temps écoulé depuis le lancement de l'application (en seconde)
+           		if ((t > compteur) ) {
+           			if (t < (compteur + 0.5)) {
+           				compteur += speed.getValue();
+           				sliderAnnee.setValue(sliderAnnee.getValue()+1);
+           			} else { // Dans ce cas, t est trop grand par rapport au compteur donc on donne la valeur de t au compteur
+           				compteur = t;
+           			}
+           		}
+           	}
+        };
+        
+        
+        // EVENEMENTS ET LISTENERS
+        
+        // Listener de la checkBox "Terre en couleur"
         checkBoxTerreCouleur.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
@@ -218,52 +252,36 @@ public class Controller implements Initializable {
 			}
         });
         
-        // Listener lié à la checkBox "CheckBoxAnomalies"
+        // Listener de la checkBox "Anomalies"
         checkBoxAnomalies.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
 				if (checkBoxAnomalies.isSelected()) {
-					updateMode(root3D, quad, histo);
+					updateShapesParent(root3D, quad, histo);
 				} else {
+					if (start_pause.getText().equals("Pause")) { // Si l'animation est en cours et qu'on décoche la case "Anomalies" alors l'animation est arrêtée
+						start_pause.setText("Start");
+						animation.stop();
+					}
 					emptyLegend();
-					root3D.getChildren().remove(3);
+					root3D.getChildren().remove(3); // L'indice 3 correspond aux données liées aux anomalies de températures (quadrilatères ou histogrammes)
 				}
 			}
         });
     	
-    	// Listener lié aux radioBoutons "buttonQuadrilatere" et "buttonHistogramme"
+    	// Listener des radioBoutons "Quadrilatere" et "Histogramme"
     	group.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
     		@Override
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
-    			updateMode(root3D, quad, histo);
+    			updateShapesParent(root3D, quad, histo);
     		}
     	});
     	
-    	
-		
-
-		// Animation
-		final long startNanoTime = System.nanoTime();
-        AnimationTimer animation = new AnimationTimer() {
-        	double compteur = speed.getValue(); // Permet d'incrémenter les années au bon moment
-        	@Override
-        	public void handle(long currentNanotime) {
-        		double t = (currentNanotime - startNanoTime) / 1000000000.0; // Correspond au temps écoulé depuis le lancement de l'application (en seconde)
-        		if ((t > compteur) ) {
-        			if (t < (compteur + 0.5)) {
-        				compteur += speed.getValue();
-        				sliderAnnee.setValue(sliderAnnee.getValue()+1);
-        			} else { // Dans ce cas, t est trop grand par rapport au compteur donc on donne la valeur de t au compteur
-        				compteur = t;
-        			}
-        		}
-        	}
-        };
-        
+    	// Listener du bouton "Start & Pause"
         start_pause.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				if (start_pause.getText().equals("Start") && (sliderAnnee.getValue() < 2020)) {
+				if (checkBoxAnomalies.isSelected() && start_pause.getText().equals("Start") && (sliderAnnee.getValue() < 2020)) {
 					start_pause.setText("Pause");
 					animation.start();
 				} else if (start_pause.getText().equals("Pause")){
@@ -287,113 +305,74 @@ public class Controller implements Initializable {
 						animation.stop();
 						start_pause.setText("Start");
 					}
-					updateQuadrilatere(quad, terre, newValue.intValue());
-					updateHistogramme(histo, terre, newValue.intValue());
+					updateQuadrilatereEnfant(quad, terre, newValue.intValue());
+					updateHistogrammeEnfant(histo, terre, newValue.intValue());
 				}
 			}
 		});
     	
-    	// Evenement lié au clic de la souris sur la terre
-    	EventHandler<MouseEvent> eventMode = new EventHandler<MouseEvent>() {
+    	// Evenement lié à la pression du clic de la souris
+    	EventHandler<MouseEvent> eventMousePressed = new EventHandler<MouseEvent>() {
+    		@Override
+            public void handle(MouseEvent me) {
+                timePressed = System.currentTimeMillis();
+            }
+    	};
+    	earthCouleur.setOnMousePressed(eventMousePressed);
+        earthGris.setOnMousePressed(eventMousePressed);
+        quad.setOnMousePressed(eventMousePressed);
+    	
+    	// Evenement lié au relâchement du clic de la souris
+    	EventHandler<MouseEvent> eventMouseReleased = new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent me) {
-            	PickResult pr = me.getPickResult();
-            	Point3D p = pr.getIntersectedPoint();
-            	
-        		System.out.print("Coordonnées cartésiennes du point sélectionné : ");
-        		StringBuilder sb1 = new StringBuilder();
-        		sb1.append("(x = ");
-            	sb1.append(p.getX());
-            	sb1.append(", y = ");
-            	sb1.append(p.getY());
-            	sb1.append(", z = ");
-            	sb1.append(p.getZ());
-            	sb1.append(")");
-            	System.out.println(sb1.toString());
-        		
-        		System.out.print("Coordonnées géométriques du point sélectionné : ");
-        		double[] coordonnees = coord3dToGeoCoord(p.getX(), p.getY(), p.getZ());
-        		StringBuilder sb2 = new StringBuilder();
-        		sb2.append("(Latitude = ");
-            	sb2.append(coordonnees[0]);
-            	sb2.append(", Longitude = ");
-            	sb2.append(coordonnees[1]);
-            	sb2.append(")");
-            	System.out.println(sb2.toString());
-
-            	System.out.print("Coordonnées géométriques du centre de la zone la plus proche : ");
-        		int[] coordonneesZone = nearestCenterZoneGeoCoord(coordonnees[0], coordonnees[1], coordonnees[2]);
-        		StringBuilder sb3 = new StringBuilder();
-        		sb3.append("(Latitude = ");
-            	sb3.append(coordonneesZone[0]);
-            	sb3.append(", Longitude = ");
-            	sb3.append(coordonneesZone[1]);
-            	sb3.append(")");
-            	System.out.println(sb3.toString() + "\n");
-        		
-            	
-        		// Graphique
-        		StringBuilder title = new StringBuilder(5);
-        		title.append("Evolution des anomalies de température de la zone (");
-            	title.append(coordonneesZone[0]);
-            	title.append(", ");
-            	title.append(coordonneesZone[1]);
-            	title.append(")");
-            	chart.setTitle(title.toString());
-            	
-            	// Suppression des anciennes données
-            	if (chart.getData().size() > 0) {
-            		chart.getData().remove(0);
-            	}
-            	
-            	XYChart.Series<Integer, Float> series = new XYChart.Series<Integer, Float>();
-            	List<Float> anomaliesAnnees = terre.anomaliesAnnees((int) coordonneesZone[0], (int) coordonneesZone[1]);
-            	
-            	int compteurAnnee = 1880;
-            	for (int i = 0 ; i < anomaliesAnnees.size() ; i = i + 1) {
-            		float val = anomaliesAnnees.get(i);
-            		if (!Float.isNaN(val)) {
-            			XYChart.Data<Integer, Float> data = new XYChart.Data<Integer, Float>(compteurAnnee, val);
-            			series.getData().add(data);
-            		}
-            		compteurAnnee += 1;
-            	}
-            	chart.getData().add(series);
+            	if (System.currentTimeMillis() < (timePressed+200)) { // Il s'agit d'un clic si la durée de ce clic est inférieur à 200ms (sinon c'est un drag, pour la rotation de la terre)
+	            	PickResult pr = me.getPickResult();
+	            	Point3D p = pr.getIntersectedPoint();
+	        		int[] coordonneesZone = showCoords(p);
+	        		// coordonneesZone[0] et coordonneesZone[1] correspondent respectivement à la latitude et à la longitude du centre de la zone la plus proche de là où on a cliqué
+	        		updateChart(terre, coordonneesZone[0], coordonneesZone[1]);
+	            }
             }
         };
-        earthCouleur.setOnMousePressed(eventMode);
-        earthGris.setOnMousePressed(eventMode);
-        quad.setOnMousePressed(eventMode);
+        earthCouleur.setOnMouseReleased(eventMouseReleased);
+        earthGris.setOnMouseReleased(eventMouseReleased);
+        quad.setOnMouseReleased(eventMouseReleased);
         
-        //TODO delete here
-        // Partie 8
-        /*final PhongMaterial greenMaterial = new PhongMaterial();
-        Color green = new Color(0, 0.1, 0, 0.1);
-        greenMaterial.setDiffuseColor(green);
         
-        final PhongMaterial redMaterial = new PhongMaterial();
-        Color red = new Color(0.1, 0, 0, 0.1);
-        redMaterial.setDiffuseColor(red);
-        
-		boolean couleur = true;
-        for (int lon = -180 ; lon < 180 ; lon = lon + 4) { //longitude
-        	for (int lat = -90 ; lat < 90 ; lat = lat + 4) { //latitude
-        		Point3D topRight = geoCoordTo3dCoord(lat+4, lon+4, 1.01f);
-        		Point3D bottomRight = geoCoordTo3dCoord(lat, lon+4, 1.01f);
-        		Point3D bottomLeft = geoCoordTo3dCoord(lat, lon, 1.01f);
-        		Point3D topLeft = geoCoordTo3dCoord(lat+4, lon, 1.01f);
-        		if (couleur) {
-        			AddQuadrilateral(earth, topRight, bottomRight, bottomLeft, topLeft, greenMaterial);
-        			couleur = false;
-        		} else {
-        			AddQuadrilateral(earth, topRight, bottomRight, bottomLeft, topLeft, redMaterial);
-        			couleur = true;
-        		}
+        // Création d'une subscene à partir du groupe parent root3D
+	    SubScene subscene = new SubScene(root3D, 600, 600, true, SceneAntialiasing.BALANCED);
+	    subscene.setCamera(camera);
+	    subscene.setFill(Color.gray(0.3));
+	    pane3D.getChildren().addAll(subscene);
+	}
+	
+	/**
+	 * Fonction permettant la mise à jour du mode de visualisation pour l'affichage des quadrilatères/histogrammes.
+	 * Elle met à jour la légende et ajoute les quadrilatères / histogrammes à l'indice 3 du groupe parent de la scène 3D.
+	 * @param parent
+	 * @param quad
+	 * @param histo
+	 */
+	private void updateShapesParent(Group parent, Group quad, Group histo) {
+    	if (buttonQuadrilatere.isSelected() && checkBoxAnomalies.isSelected()) {
+			// Affichage des quadrilatères
+        	putlegendQuadrilatere();
+        	if (parent.getChildren().size() == 3) { 
+        		parent.getChildren().add(quad); // Ajout des quadrilatères à l'indice 3 du groupe parent de la scène 3D
+        	} else {
+        		parent.getChildren().set(3, quad); // Remplacement des histogrammes par les quadrilatères à l'indice 3 du groupe parent de la scène 3D
         	}
-        }*/
-        
-        
-	}//TODO fin du initialize
+        } else if(buttonHistogramme.isSelected() && checkBoxAnomalies.isSelected()) {
+        	// Affichage des histogrammes
+           putlegendHistogram();
+           if (parent.getChildren().size() == 3) {
+        	   parent.getChildren().add(histo); // Ajout des histogrammes à l'indice 3 du groupe parent de la scène 3D
+           } else {
+        	   parent.getChildren().set(3, histo); // Remplacement des quadrilatères par les histogrammes à l'indice 3 du groupe parent de la scène 3D
+           }
+        }
+    }
 	
 	/**
 	 * Fonction permettant de passer de coordonnées géographiques en coordonnées cartésiennes (adaptée à la texture de la terre fournie)
@@ -442,7 +421,7 @@ public class Controller implements Initializable {
 	}
 	
 	/**
-	 * On fournit les coordonnées géographiques d'un point et cette fonction nous renvoie les coordonnées géographiques du centre de la zone la plus proche de ce point
+	 * On fournit les coordonnées géographiques d'un point et cette fonction nous renvoie les coordonnées géographiques du centre de la zone la plus proche de ce point.
 	 * @param lat
 	 * @param lon
 	 * @param radius
@@ -458,6 +437,86 @@ public class Controller implements Initializable {
 		return retour;
 	}
 	
+	/**
+	 * Fonction permettant l'affichage des coordonnées cartésiennes et géographiques du point dans la console.
+	 * Elle permet également l'affichage des coordonnées géographiques du centre de la zone la plus proche du point entrée en paramètre.
+	 * @param p
+	 * @return coordonnées géographiques du centre de la zone la plus proche
+	 */
+	public int[] showCoords(Point3D p) {
+		System.out.print("Coordonnées cartésiennes du point sélectionné : ");
+		StringBuilder sb1 = new StringBuilder();
+		sb1.append("(x = ");
+    	sb1.append(p.getX());
+    	sb1.append(", y = ");
+    	sb1.append(p.getY());
+    	sb1.append(", z = ");
+    	sb1.append(p.getZ());
+    	sb1.append(")");
+    	System.out.println(sb1.toString());
+		
+		System.out.print("Coordonnées géométriques du point sélectionné : ");
+		double[] coordonnees = coord3dToGeoCoord(p.getX(), p.getY(), p.getZ());
+		StringBuilder sb2 = new StringBuilder();
+		sb2.append("(Latitude = ");
+    	sb2.append(coordonnees[0]);
+    	sb2.append(", Longitude = ");
+    	sb2.append(coordonnees[1]);
+    	sb2.append(")");
+    	System.out.println(sb2.toString());
+
+    	System.out.print("Coordonnées géométriques du centre de la zone la plus proche : ");
+		int[] coordonneesZone = nearestCenterZoneGeoCoord(coordonnees[0], coordonnees[1], coordonnees[2]);
+		StringBuilder sb3 = new StringBuilder();
+		sb3.append("(Latitude = ");
+    	sb3.append(coordonneesZone[0]);
+    	sb3.append(", Longitude = ");
+    	sb3.append(coordonneesZone[1]);
+    	sb3.append(")");
+    	System.out.println(sb3.toString() + "\n");
+    	
+    	return coordonneesZone;
+	}
+	
+	/**
+	 * Cette fonction met à jour le graphique. Elle précise les coordonnées géographiques du centre de la zone dans le titre du graphique.
+	 * Elle ajoute également toutes les anomalies de température connues de cette zone pour chaque année dans le graphique.
+	 * @param terre
+	 * @param latZone
+	 * @param lonZone
+	 */
+	private void updateChart(Terre terre, int latZone, int lonZone) {
+		StringBuilder title = new StringBuilder(5);
+		title.append("Evolution des anomalies de température de la zone (");
+    	title.append(latZone);
+    	title.append(", ");
+    	title.append(lonZone);
+    	title.append(")");
+    	chart.setTitle(title.toString());
+    	
+    	// Suppression des anciennes données
+    	if (chart.getData().size() > 0) {
+    		chart.getData().remove(0);
+    	}
+    	
+    	XYChart.Series<Integer, Float> series = new XYChart.Series<Integer, Float>();
+    	List<Float> anomaliesAnnees = terre.anomaliesAnnees(latZone, lonZone);
+    	
+    	int compteurAnnee = 1880;
+    	for (int i = 0 ; i < anomaliesAnnees.size() ; i = i + 1) {
+    		float val = anomaliesAnnees.get(i);
+    		if (!Float.isNaN(val)) {
+    			XYChart.Data<Integer, Float> data = new XYChart.Data<Integer, Float>(compteurAnnee, val);
+    			series.getData().add(data);
+    		}
+    		compteurAnnee += 1;
+    	}
+    	chart.getData().add(series);
+	}
+	
+	/**
+	 * Cette fonction permet de supprimer la légende.
+	 */
 	private void emptyLegend() {
 		pane5.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
     	pane4.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
@@ -471,6 +530,9 @@ public class Controller implements Initializable {
     	pane_4.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
     	pane_5.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
 	}
+	
+	
+	// FONCTIONS POUR LES QUADRILATERES
 
 	/**
 	 * Fonction permettant d'adapter la légende aux quadrilatères
@@ -490,13 +552,13 @@ public class Controller implements Initializable {
 	}
 	
 	/**
-	 * Fonction qui ajoute des quadrilatères au niveau de chaque zone dans le groupe parent.
+	 * Fonction qui ajoute des quadrilatères au niveau de chaque zone dans le groupe enfant.
 	 * Chacun de ces quadrilatères a une couleur adaptée à sa zone et à son anomalie de température pour une certaine année. 
 	 * @param parent
 	 * @param terre
 	 * @param annee
 	 */
-    private void quadrilatere(Group parent, Terre terre, int annee) {
+    private void putQuadrilatereEnfant(Group enfant, Terre terre, int annee) {
     	for (int lat = -88 ; lat <= 88 ; lat = lat + 4) { //latitude
         	for (int lon = -178 ; lon <= 178 ; lon = lon + 4) { //longitude
         		float anomalie = terre.anomalie(lat, lon, annee);
@@ -534,7 +596,7 @@ public class Controller implements Initializable {
             	Point3D bottomRight = geoCoordTo3dCoord(lat-2, lon+2, 1.01f);
             	Point3D bottomLeft = geoCoordTo3dCoord(lat-2, lon-2, 1.01f);
             	Point3D topLeft = geoCoordTo3dCoord(lat+2, lon-2, 1.01f);
-                AddQuadrilateral(parent, topRight, bottomRight, bottomLeft, topLeft, colorMaterial);
+                addQuadrilateralEnfant(enfant, topRight, bottomRight, bottomLeft, topLeft, colorMaterial);
         	}
     	}
     }
@@ -545,8 +607,8 @@ public class Controller implements Initializable {
      * @param terre
      * @param annee
      */
-    private void updateQuadrilatere(Group parent, Terre terre, int annee) {
-    	for (int i = 0 ; i < parent.getChildren().size() ; i = i + 1) {
+    private void updateQuadrilatereEnfant(Group enfant, Terre terre, int annee) {
+    	for (int i = 0 ; i < enfant.getChildren().size() ; i = i + 1) {
     		float anomalie = terre.getListeZones().get(i).getListeAnomalies().get(annee - 1880);
     		final PhongMaterial colorMaterial = new PhongMaterial();
     		if (anomalie > 0) {
@@ -578,7 +640,7 @@ public class Controller implements Initializable {
         	} else {
         		colorMaterial.setDiffuseColor(Color.TRANSPARENT);
         	}
-            final MeshView meshView = (MeshView) parent.getChildren().get(i);
+            final MeshView meshView = (MeshView) enfant.getChildren().get(i);
             meshView.setMaterial(colorMaterial);
     	}
     }
@@ -592,7 +654,7 @@ public class Controller implements Initializable {
      * @param topLeft
      * @param material
      */
-    private void AddQuadrilateral(Group parent, Point3D topRight, Point3D bottomRight, Point3D bottomLeft, Point3D topLeft, PhongMaterial material)
+    private void addQuadrilateralEnfant(Group enfant, Point3D topRight, Point3D bottomRight, Point3D bottomLeft, Point3D topLeft, PhongMaterial material)
     {
         final TriangleMesh triangleMesh = new TriangleMesh();
         final float[] points = {
@@ -631,14 +693,16 @@ public class Controller implements Initializable {
         
         final MeshView meshView = new MeshView(triangleMesh);
         meshView.setMaterial(material);
-        parent.getChildren().addAll(meshView);
+        enfant.getChildren().addAll(meshView);
     }
     
+    
+    // FONCTIONS POUR LES HISTOGRAMMES
     
     /**
 	 * Fonction permettant d'adapter la légende aux histogrammes
 	 */
-    private void putlegendHistogramme() {
+    private void putlegendHistogram() {
         pane5.setStyle("-fx-background-color: rgb(255, 25, 25)");
     	pane4.setStyle("-fx-background-color: rgb(255, 50, 50)");
     	pane3.setStyle("-fx-background-color: rgb(255, 75, 75)");
@@ -653,13 +717,13 @@ public class Controller implements Initializable {
 	}
     
     /**
-	 * Fonction qui ajoute des histogrammes au niveau de chaque zone dans le groupe parent.
+	 * Fonction qui ajoute des histogrammes au niveau de chaque zone dans le groupe enfant.
 	 * Chacun de ces histogrammes a une couleur et une taille adaptés à sa zone et à son anomalie de température pour une certaine année. 
 	 * @param parent
 	 * @param terre
 	 * @param annee
 	 */
-    private void histogramme (Group parent, Terre terre, int annee) {
+    private void putHistogramEnfant(Group enfant, Terre terre, int annee) {
        	for (int lat = -88 ; lat <= 88 ; lat = lat + 4) { //latitude
            	for (int lon = -178 ; lon <= 178 ; lon = lon + 4) { //longitude
            		Point3D point1 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.01);
@@ -709,7 +773,7 @@ public class Controller implements Initializable {
                	}
                 Cylinder line = createLine(point1, point2);
                 line.setMaterial(colorMaterial);
-               	parent.getChildren().add(line);
+               	enfant.getChildren().add(line);
            	}
        	}
     }
@@ -720,7 +784,7 @@ public class Controller implements Initializable {
      * @param terre
      * @param annee
      */
-    private void updateHistogramme (Group parent, Terre terre, int annee) {
+    private void updateHistogrammeEnfant(Group enfant, Terre terre, int annee) {
     	int indice = 0;
     	for (int lat = -88 ; lat <= 88 ; lat = lat + 4) { //latitude
            	for (int lon = -178 ; lon <= 178 ; lon = lon + 4) { //longitude
@@ -769,7 +833,7 @@ public class Controller implements Initializable {
                		point2 = geoCoordTo3dCoord((float) lat, (float) lon, (float) 1.02);
                		colorMaterial.setDiffuseColor(Color.TRANSPARENT);
                	}
-            	final Cylinder line = (Cylinder) parent.getChildren().get(indice);
+            	final Cylinder line = (Cylinder) enfant.getChildren().get(indice);
                 line.setMaterial(colorMaterial);
                     
                 Point3D diff = point2.subtract(point1);
@@ -789,9 +853,9 @@ public class Controller implements Initializable {
     	}
     }
     
-    // From Rahel Lathy : https://netzwerg.ch/blog/2015/03/22/javafx-3d-line/
     /**
-     * Fonction permettant la création d'un cylindre à partir d'un point d'origine et un point d'arrivée (en coordonnées cartésiennes)
+     * Fonction permettant la création d'un cylindre à partir d'un point d'origine et un point d'arrivée (en coordonnées cartésiennes).
+     * (From Rahel Lathy : https://netzwerg.ch/blog/2015/03/22/javafx-3d-line)
      * @param origin
      * @param target
      * @return
@@ -815,25 +879,5 @@ public class Controller implements Initializable {
         line.setRadius(0.006);
 
         return line;
-    }
-    
-    private void updateMode(Group parent, Group quad, Group histo) {
-    	if (buttonQuadrilatere.isSelected() && checkBoxAnomalies.isSelected()) {
-			// Affichage des quadrilatères
-        	putlegendQuadrilatere();
-        	if (parent.getChildren().size() == 3) { 
-        		parent.getChildren().add(quad); // Ajout des quadrilatères dans le groupe parent de la scène 3D (affichage des quadrilatères)
-        	} else {
-        		parent.getChildren().set(3, quad); // Remplacement du groupe histo par le groupe quad dans le groupe parent de la scène 3D (affichage des quadrilatères)
-        	}
-        } else if(buttonHistogramme.isSelected() && checkBoxAnomalies.isSelected()) {
-        	// Affichage des histogrammes
-           putlegendHistogramme();
-           if (parent.getChildren().size() == 3) {
-        	   parent.getChildren().add(histo); // Ajout des histogrammes dans le groupe parent de la scène 3D
-           } else {
-        	   parent.getChildren().set(3, histo); // Remplacement du groupe quad par le groupe histo dans le groupe parent de la scène 3D (affichage des histogrammes)
-           }
-        }
     }
 }

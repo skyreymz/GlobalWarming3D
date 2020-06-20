@@ -1,4 +1,4 @@
-package climatechange;
+package partieApplicative;
 
 import static org.junit.Assert.*;
 import org.junit.Before;

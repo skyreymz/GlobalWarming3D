@@ -1,4 +1,4 @@
-package climatechange;
+package partieApplicative;
 
 import java.util.List;
 import java.util.ArrayList;

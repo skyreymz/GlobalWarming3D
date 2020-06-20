@@ -1,4 +1,4 @@
-package partiegraphique;
+package partieGraphique;
 
 import java.io.IOException;
 import javafx.application.Application;
