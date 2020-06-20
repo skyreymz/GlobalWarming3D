@@ -8,11 +8,6 @@ import javafx.scene.Scene;
 import javafx.fxml.FXMLLoader;
 
 public class EarthGUI extends Application {
-	//ne pas oublier de rajouter : fx:controller="partiegraphique.Controller"
-	//dans la ligne du VBOX du .fxml (première ligne)
-	//et aussi fx:id="pane3D" dans le Pane dans du .fxml
-	//Mettre "earth_lights_4800_nb.png" ou "earth_lights_4800.png" à la 13ème ligne de earth.mtl
-	
 	@Override
 	public void start(Stage primaryStage) {
 		try {

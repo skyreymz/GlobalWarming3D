@@ -82,11 +82,12 @@ public class CameraManager {
                 mouseDeltaX = (mousePosX - mouseOldX);
                 mouseDeltaY = (mousePosY - mouseOldY);
 
-                double modifier = 1.0;
-
+                double modifier = -camera.getTranslateZ() * 0.05; // Rotations proportionnelles au zoom
+                
                 if (me.isControlDown()) {
-                    modifier = CONTROL_MULTIPLIER;
+                    modifier /= 5;
                 }
+                
                 if (me.isPrimaryButtonDown()) {
                 	double newRx = rx.getAngle() - mouseDeltaY * modifier * ROTATION_SPEED;
                 	if (newRx > CAMERA_MAX_X_ANGLE) {
@@ -131,7 +132,6 @@ public class CameraManager {
                         rx.setAngle(CAMERA_INITIAL_X_ANGLE);
                         break;
                     default:
-
                 }
             }
         });

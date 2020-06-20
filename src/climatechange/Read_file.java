@@ -9,7 +9,7 @@ import java.util.ArrayList;
 public class Read_file {
 	
 	public static Terre getDataFromCSVFile(String path) {
-		//Attributs de la classe Terre
+		// Paramètres d'entrée de la classe Terre
 		Float maxAnomalie = Float.NEGATIVE_INFINITY;
 		Float minAnomalie = Float.POSITIVE_INFINITY;
 		List<String> listeAnnees = new ArrayList<String>();
@@ -19,17 +19,16 @@ public class Read_file {
 			FileReader file = new FileReader(path);
 			BufferedReader bufRead = new BufferedReader(file);
 		
-			//Première ligne
+			// Première ligne du csv
 			String line = bufRead.readLine();
 			String[] tab = line.split(",");
-			
 			String latitude = tab[0]; // La première valeur de la première ligne correspond à "lat"
 			String longitude = tab[1]; // La seconde valeur de la première ligne correspond à "lon"
 			for (int i = 2 ; i < tab.length ; i = i + 1) { //Les autres valeurs correspondent aux années
 				listeAnnees.add(tab[i]);
 			}
 
-			//Deuxième ligne jusqu'à la fin
+			// Deuxième ligne du csv jusqu'à la fin
 			line = bufRead.readLine();
 			while ( line != null) {
 			   	String[] array = line.split(",");
@@ -42,26 +41,22 @@ public class Read_file {
 			    	try {
 			    		float valeur = Float.parseFloat(array[i]);
 			    		listeAnomalies.add(valeur);
-
+			    		
 			    		if (maxAnomalie < valeur) {
 			    			maxAnomalie = valeur;
 			    		}
-			    		
 			    		if (minAnomalie > valeur) {
 			    			minAnomalie = valeur;
 			    		}
-			    		
-			    	} catch (java.lang.NumberFormatException erreur) { //La valeur n'est pas un flottant
+			    	} catch (java.lang.NumberFormatException erreur) { // La valeur n'est pas un nombre
 			    			listeAnomalies.add(Float.NaN);
 			    	}
 			    }
-			    
-			    Zone zone = new Zone(lat, lon, listeAnomalies); //Création de la zone
-			    listeZones.add(zone); //Ajout de la zone dans la liste de zones
+			    Zone zone = new Zone(lat, lon, listeAnomalies);
+			    listeZones.add(zone);
 			    
 			    line = bufRead.readLine();
 			}
-
 			bufRead.close();
 			file.close();
 		} catch (IOException e) {
