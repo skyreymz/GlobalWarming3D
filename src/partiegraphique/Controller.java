@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.List;
 
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Toggle;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
@@ -120,10 +121,16 @@ public class Controller implements Initializable {
 	private Slider sliderAnnee;
 	
 	@FXML
-	private RadioButton quadrilatere;
+	private CheckBox checkBoxTerreCouleur;
 	
 	@FXML
-	private RadioButton histogramme;
+	private CheckBox checkBoxAnomalies;
+	
+	@FXML
+	private RadioButton buttonQuadrilatere;
+	
+	@FXML
+	private RadioButton buttonHistogramme;
 	
 	@FXML
 	private Button start_pause;
@@ -142,64 +149,97 @@ public class Controller implements Initializable {
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		// Données concernant les anomalies
+        // Mise en place du décochage des radio boutons "buttonHistogramme" et "buttonQuadrilatère"
+    	ToggleGroup group = new ToggleGroup();
+    	buttonQuadrilatere.setToggleGroup(group);
+    	buttonQuadrilatere.setSelected(true);
+    	buttonHistogramme.setToggleGroup(group);
+    	
+		// Données concernant les anomalies de température
 		Terre terre = Read_file.getDataFromCSVFile("src/climatechange/tempanomaly_4x4grid.csv");
 		maxAnomalie = terre.getMaxAnomalie();
     	minAnomalie = terre.getMinAnomalie();
-
+    	
         // Données concernant la structure de la Terre
-        ObjModelImporter objImporter = new ObjModelImporter();
+        ObjModelImporter objCouleurImporter = new ObjModelImporter();
+        ObjModelImporter objGrisImporter = new ObjModelImporter();
         try {
-        	URL modelUrl = this.getClass().getResource("Earth/earth.obj");
-        	objImporter.read(modelUrl);
+        	URL modelCouleurUrl = this.getClass().getResource("Earth/earth.obj");
+        	objCouleurImporter.read(modelCouleurUrl);
+        	URL modelGrisUrl = this.getClass().getResource("Earth/earth_nb.obj");
+        	objGrisImporter.read(modelGrisUrl);
         } catch (ImportException e) {
         	// handle exception
         	System.out.println(e.getMessage());
         }
-        MeshView[] meshViews = objImporter.getImport();
+        MeshView[] meshViewsCouleur = objCouleurImporter.getImport();
+        MeshView[] meshViewsGris = objGrisImporter.getImport();
         
         // Groupe parent de la scène 3D
         Group root3D = new Group();
         
         // Groupes enfants
-        Group earth = new Group(meshViews); // contient la structure de la Terre
-        Group quad = new Group(); // contient les quadrilatères pour une certaine année
-        Group histo = new Group(); // contient les histogrammes pour une certaine année
+        Group earthCouleur = new Group(meshViewsCouleur); // contient la structure de la Terre (en couleur)
+        Group earthGris = new Group(meshViewsGris); // contient la structure de la Terre (en gris)
+        Group quad = new Group(); // Groupe des quadrilatères pour une certaine année
+        Group histo = new Group(); // Groupe des histogrammes pour une certaine année
         
         // Initialisation des deux types de visualisation pour l'année 2000
         quadrilatere(quad, terre, 2000);
         histogramme(histo, terre, 2000);
         
-
-        // Mise en place du décochage des radio boutons "Histogramme" et "Quadrilatère"
-    	ToggleGroup group = new ToggleGroup();
-    	quadrilatere.setToggleGroup(group);
-    	histogramme.setToggleGroup(group);
-		
-		// Listener lié aux radioBoutons "quadrilatere" et "histogramme"
-		group.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
-	           @Override
+        // Initialisation de la terre en couleur
+        root3D.getChildren().add(earthCouleur); // Ajout de earth (en couleur) à l'indice 0 de root3D.getChildren()
+        checkBoxTerreCouleur.setSelected(true);
+        
+        // Ajout d'une lumière ambiante
+        AmbientLight ambientLight = new AmbientLight(Color.WHITE);
+        ambientLight.getScope().addAll(root3D);
+        root3D.getChildren().add(ambientLight); // ajout de ambientLight à l'indice 1 de root3D.getChildren()
+        
+        // Camera
+        PerspectiveCamera camera = new PerspectiveCamera(true);
+        new CameraManager(camera, pane3D, root3D); // ajout de cameraXform (dans la classe CameraManager) à l'indice 2 de root3D.getChildren()
+        
+        SubScene subscene = new SubScene(root3D, 600, 600, true, SceneAntialiasing.BALANCED);
+        subscene.setCamera(camera);
+        subscene.setFill(Color.gray(0.3)); 
+        pane3D.getChildren().addAll(subscene);
+        
+        // Listener lié à la checkBox "checkBoxTerreCouleur"
+        checkBoxTerreCouleur.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				if (checkBoxTerreCouleur.isSelected()) {
+					root3D.getChildren().set(0, earthCouleur);
+				} else {
+					root3D.getChildren().set(0, earthGris);
+				}
+			}
+        });
+        
+        // Listener lié à la checkBox "CheckBoxAnomalies"
+        checkBoxAnomalies.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				if (checkBoxAnomalies.isSelected()) {
+					updateMode(root3D, quad, histo);
+				} else {
+					emptyLegend();
+					root3D.getChildren().remove(3);
+				}
+			}
+        });
+    	
+    	// Listener lié aux radioBoutons "buttonQuadrilatere" et "buttonHistogramme"
+    	group.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
+    		@Override
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
-	               if (quadrilatere.isSelected()) {
-	            	   legendeQuadrilatere();
-	            	   if (root3D.getChildren().size() == 4) { 
-	            		   root3D.getChildren().remove(3);
-	            	   } else {
-	            		   System.out.println(root3D.getChildren().size());
-	            	   }
-	            	   root3D.getChildren().add(quad);
-	               } else {
-	            	   legendeHistogramme();
-	            	   if (root3D.getChildren().size() == 4) { 
-	            		   root3D.getChildren().remove(3);
-	            	   } else {
-	            		   System.out.println(root3D.getChildren().size());
-	            	   }
-	            	   root3D.getChildren().add(histo);
-	            	   System.out.println(root3D.getChildren().size());
-	               }
-	           }
-	       });
+    			updateMode(root3D, quad, histo);
+    		}
+    	});
+    	
+    	
 		
 
 		// Animation
@@ -232,7 +272,6 @@ public class Controller implements Initializable {
 				}
 			}
 		});
-        
         
         // Listener du slider "Années"
     	sliderAnnee.valueProperty().addListener(new ChangeListener<Number>() {
@@ -273,7 +312,7 @@ public class Controller implements Initializable {
             	System.out.println(sb1.toString());
         		
         		System.out.print("Coordonnées géométriques du point sélectionné : ");
-        		double[] coordonnees = coord3dToGeoCoordZone(p.getX(), p.getY(), p.getZ());
+        		double[] coordonnees = coord3dToGeoCoord(p.getX(), p.getY(), p.getZ());
         		StringBuilder sb2 = new StringBuilder();
         		sb2.append("(Latitude = ");
             	sb2.append(coordonnees[0]);
@@ -322,7 +361,8 @@ public class Controller implements Initializable {
             	chart.getData().add(series);
             }
         };
-        earth.setOnMousePressed(eventMode);
+        earthCouleur.setOnMousePressed(eventMode);
+        earthGris.setOnMousePressed(eventMode);
         quad.setOnMousePressed(eventMode);
         
         //TODO delete here
@@ -352,22 +392,7 @@ public class Controller implements Initializable {
         	}
         }*/
         
-        // Ajout du Group earth au graphe de la scène 3D
-        root3D.getChildren().add(earth); // ajout de earth à l'indice 0 de root3D.getChildren()
         
-        // Ajout d'une lumière ambiante
-        AmbientLight ambientLight = new AmbientLight(Color.WHITE);
-        ambientLight.getScope().addAll(root3D);
-        root3D.getChildren().add(ambientLight); // ajout de ambientLight à l'indice 1 de root3D.getChildren()
-        
-        // Camera
-        PerspectiveCamera camera = new PerspectiveCamera(true);
-        new CameraManager(camera, pane3D, root3D); // ajout de cameraXform (dans la classe CameraManager) à l'indice 2 de root3D.getChildren()
-        
-        SubScene subscene = new SubScene(root3D, 600, 600, true, SceneAntialiasing.BALANCED);
-        subscene.setCamera(camera);
-        subscene.setFill(Color.gray(0.3)); 
-        pane3D.getChildren().addAll(subscene);
 	}//TODO fin du initialize
 	
 	/**
@@ -395,7 +420,7 @@ public class Controller implements Initializable {
 	 * @param z
 	 * @return
 	 */
-	public static double[] coord3dToGeoCoordZone(double x, double y, double z) {
+	public static double[] coord3dToGeoCoord(double x, double y, double z) {
 		double r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
 		
 		double teta = Math.acos(y/r);
@@ -432,11 +457,25 @@ public class Controller implements Initializable {
 		int[] retour = {latZone, lonZone};
 		return retour;
 	}
+	
+	private void emptyLegend() {
+		pane5.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane4.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane3.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane2.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane1.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane0.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane_1.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane_2.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane_3.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane_4.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+    	pane_5.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
+	}
 
 	/**
 	 * Fonction permettant d'adapter la légende aux quadrilatères
 	 */
-	private void legendeQuadrilatere() {
+	private void putlegendQuadrilatere() {
         pane5.setStyle("-fx-background-color: rgb(0, 25, 255)");
     	pane4.setStyle("-fx-background-color: rgb(0, 50, 255)");
     	pane3.setStyle("-fx-background-color: rgb(0, 75, 255)");
@@ -599,7 +638,7 @@ public class Controller implements Initializable {
     /**
 	 * Fonction permettant d'adapter la légende aux histogrammes
 	 */
-    private void legendeHistogramme() {
+    private void putlegendHistogramme() {
         pane5.setStyle("-fx-background-color: rgb(255, 25, 25)");
     	pane4.setStyle("-fx-background-color: rgb(255, 50, 50)");
     	pane3.setStyle("-fx-background-color: rgb(255, 75, 75)");
@@ -776,5 +815,25 @@ public class Controller implements Initializable {
         line.setRadius(0.006);
 
         return line;
+    }
+    
+    private void updateMode(Group parent, Group quad, Group histo) {
+    	if (buttonQuadrilatere.isSelected() && checkBoxAnomalies.isSelected()) {
+			// Affichage des quadrilatères
+        	putlegendQuadrilatere();
+        	if (parent.getChildren().size() == 3) { 
+        		parent.getChildren().add(quad); // Ajout des quadrilatères dans le groupe parent de la scène 3D (affichage des quadrilatères)
+        	} else {
+        		parent.getChildren().set(3, quad); // Remplacement du groupe histo par le groupe quad dans le groupe parent de la scène 3D (affichage des quadrilatères)
+        	}
+        } else if(buttonHistogramme.isSelected() && checkBoxAnomalies.isSelected()) {
+        	// Affichage des histogrammes
+           putlegendHistogramme();
+           if (parent.getChildren().size() == 3) {
+        	   parent.getChildren().add(histo); // Ajout des histogrammes dans le groupe parent de la scène 3D
+           } else {
+        	   parent.getChildren().set(3, histo); // Remplacement du groupe quad par le groupe histo dans le groupe parent de la scène 3D (affichage des histogrammes)
+           }
+        }
     }
 }
