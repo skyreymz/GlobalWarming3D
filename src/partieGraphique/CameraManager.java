@@ -17,7 +17,7 @@ public class CameraManager {
     private static final double CAMERA_MIN_X_ANGLE = -90;
     private static final double CAMERA_MAX_X_ANGLE = 90;
     private static final double CAMERA_NEAR_CLIP = 0.1;
-    private static final double CAMERA_FAR_CLIP = 10.0;
+    private static final double CAMERA_FAR_CLIP = 10000.0;
     private static final double CONTROL_MULTIPLIER = 0.1;
     private static final double MOUSE_SPEED = 0.05;
     private static final double ROTATION_SPEED = 2.0;
