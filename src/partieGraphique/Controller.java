@@ -333,7 +333,7 @@ public class Controller implements Initializable {
 	            	PickResult pr = me.getPickResult();
 	            	Point3D p = pr.getIntersectedPoint();
 	        		int[] coordonneesZone = showCoords(p);
-	        		// coordonneesZone[0] et coordonneesZone[1] correspondent respectivement à la latitude et à la longitude du centre de la zone la plus proche de là où on a cliqué
+	        		// coordonneesZone[0] et coordonneesZone[1] correspondent respectivement à la latitude et à la longitude du centre de la zone sélectionnée
 	        		updateChart(terre, coordonneesZone[0], coordonneesZone[1]);
 	            }
             }
@@ -424,16 +424,16 @@ public class Controller implements Initializable {
 	}
 	
 	/**
-	 * On fournit les coordonnées géographiques d'un point et cette fonction nous renvoie les coordonnées géographiques du centre de la zone la plus proche de ce point.
+	 * On fournit les coordonnées géographiques d'un point et cette fonction nous renvoie les coordonnées géographiques du centre de la zone sélectionnée.
 	 * @param lat
 	 * @param lon
 	 * @param radius
 	 * @return
 	 */
 	public static int[] nearestCenterZoneGeoCoord(double lat, double lon, double radius) {
-		int latZone = (((int) (lat+90)/4) * 4) - 88; //Latitude du centre de la zone la plus proche
+		int latZone = (((int) (lat+90)/4) * 4) - 88; //Latitude du centre de la zone sélectionnée
 		
-		int lonZone; //Longitude du centre de la zone la plus proche
+		int lonZone; //Longitude du centre de la zone sélectionnée
 		lonZone = (((int) (lon+180)/4) * 4) - 178; 
 		
 		int[] retour = {latZone, lonZone};
@@ -444,7 +444,7 @@ public class Controller implements Initializable {
 	 * Fonction permettant l'affichage des coordonnées cartésiennes et géographiques du point dans la console.
 	 * Elle permet également l'affichage des coordonnées géographiques du centre de la zone la plus proche du point entrée en paramètre.
 	 * @param p
-	 * @return coordonnées géographiques du centre de la zone la plus proche
+	 * @return coordonnées géographiques du centre de la zone sélectionnée
 	 */
 	public int[] showCoords(Point3D p) {
 		System.out.print("Coordonnées cartésiennes du point sélectionné : ");
@@ -468,7 +468,7 @@ public class Controller implements Initializable {
     	sb2.append(")");
     	System.out.println(sb2.toString());
 
-    	System.out.print("Coordonnées géométriques du centre de la zone la plus proche : ");
+    	System.out.print("Coordonnées géométriques du centre de la zone sélectionnée : ");
 		int[] coordonneesZone = nearestCenterZoneGeoCoord(coordonnees[0], coordonnees[1], coordonnees[2]);
 		StringBuilder sb3 = new StringBuilder();
 		sb3.append("(Latitude = ");
