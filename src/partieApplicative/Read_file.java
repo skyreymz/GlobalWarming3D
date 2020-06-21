@@ -8,6 +8,11 @@ import java.util.ArrayList;
 
 public class Read_file {
 	
+	/**
+	 * Fonction consistant en la récupération des données du fichier csv des anomalies de températures pour les stocker dans une instance de la classe Terre.
+	 * @param path
+	 * @return une instance de la classe Terre avec toutes les données du fichier csv
+	 */
 	public static Terre getDataFromCSVFile(String path) {
 		// Variables pour les paramètres d'entrée de la classe Terre
 		Float maxAnomalie = Float.NEGATIVE_INFINITY;
