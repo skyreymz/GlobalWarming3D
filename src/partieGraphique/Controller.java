@@ -150,7 +150,6 @@ public class Controller implements Initializable {
         // Mise en place du décochage des radio boutons "buttonHistogramme" et "buttonQuadrilatère"
     	ToggleGroup group = new ToggleGroup();
     	buttonQuadrilatere.setToggleGroup(group);
-    	buttonQuadrilatere.setSelected(true);
     	buttonHistogramme.setToggleGroup(group);
     	
     	
@@ -253,12 +252,15 @@ public class Controller implements Initializable {
 			@Override
 			public void handle(ActionEvent event) {
 				if (checkBoxAnomalies.isSelected()) {
+					buttonQuadrilatere.setSelected(true);
 					updateShapesParent(root3D, quad, histo);
 				} else {
 					if (start_pause.getText().equals("Pause")) { // Si l'animation est en cours et qu'on décoche la case "Anomalies" alors l'animation est arrêtée
 						start_pause.setText("Start");
 						animation.stop();
 					}
+					buttonQuadrilatere.setSelected(false);
+					buttonHistogramme.setSelected(false);
 					emptyLegend();
 					root3D.getChildren().remove(3); // L'indice 3 correspond aux données liées aux anomalies de températures (quadrilatères ou histogrammes)
 				}
@@ -269,7 +271,12 @@ public class Controller implements Initializable {
     	group.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
     		@Override
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
-    			updateShapesParent(root3D, quad, histo);
+    			if (checkBoxAnomalies.isSelected()) {
+    				updateShapesParent(root3D, quad, histo);
+    			} else {
+    				buttonQuadrilatere.setSelected(false);
+					buttonHistogramme.setSelected(false);
+    			}
     		}
     	});
     	
