@@ -1,7 +1,5 @@
 package partieGraphique;
 
-//TODO trier les import
-
 import partieApplicative.*;
 import javafx.animation.AnimationTimer;
 import javafx.beans.value.ChangeListener;
@@ -217,7 +215,7 @@ public class Controller implements Initializable {
         // Animation
      	final long startNanoTime = System.nanoTime();
         AnimationTimer animation = new AnimationTimer() {
-          	double compteur = speed.getValue(); // Permet d'incrémenter les années au bon moment
+          	double compteur = 0; // Permet d'incrémenter le slider des années au bon moment
            	@Override
            	public void handle(long currentNanotime) {
            		double t = (currentNanotime - startNanoTime) / 1000000000.0; // Correspond au temps écoulé depuis le lancement de l'application (en seconde)
@@ -262,7 +260,7 @@ public class Controller implements Initializable {
 					buttonQuadrilatere.setSelected(false);
 					buttonHistogramme.setSelected(false);
 					emptyLegend();
-					root3D.getChildren().remove(3); // L'indice 3 correspond aux données liées aux anomalies de températures (quadrilatères ou histogrammes)
+					root3D.getChildren().remove(3); // L'indice 3 correspond aux formes géométriques liées aux anomalies de températures (quadrilatères ou histogrammes)
 				}
 			}
         });
@@ -273,7 +271,7 @@ public class Controller implements Initializable {
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
     			if (checkBoxAnomalies.isSelected()) {
     				updateShapesParent(root3D, quad, histo);
-    			} else {
+    			} else { // On ne peut pas sélectionner les radioBoutons si la checkbox "Anomalies" n'est pas cochée
     				buttonQuadrilatere.setSelected(false);
 					buttonHistogramme.setSelected(false);
     			}
@@ -329,7 +327,7 @@ public class Controller implements Initializable {
     	EventHandler<MouseEvent> eventMouseReleased = new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent me) {
-            	if (System.currentTimeMillis() < (timePressed+200)) { // Il s'agit d'un clic si la durée de ce clic est inférieur à 200ms (sinon c'est un drag, pour la rotation de la terre)
+            	if (System.currentTimeMillis() < (timePressed+200)) { // Il s'agit d'un clic si la durée de ce clic est inférieur à 200ms (sinon c'est un déplacement : pour la rotation de la terre)
 	            	PickResult pr = me.getPickResult();
 	            	Point3D p = pr.getIntersectedPoint();
 	        		int[] coordonneesZone = showCoords(p);
@@ -442,7 +440,7 @@ public class Controller implements Initializable {
 	
 	/**
 	 * Fonction permettant l'affichage des coordonnées cartésiennes et géographiques du point dans la console.
-	 * Elle permet également l'affichage des coordonnées géographiques du centre de la zone la plus proche du point entrée en paramètre.
+	 * Elle permet également l'affichage des coordonnées géographiques du centre de la zone sélectionnée.
 	 * @param p
 	 * @return coordonnées géographiques du centre de la zone sélectionnée
 	 */
@@ -538,7 +536,7 @@ public class Controller implements Initializable {
 	// FONCTIONS POUR LES QUADRILATERES
 
 	/**
-	 * Fonction permettant d'adapter la légende aux quadrilatères
+	 * Fonction permettant d'adapter la légende aux couleurs des quadrilatères
 	 */
 	private void putlegendQuadrilatere() {
         pane5.setStyle("-fx-background-color: rgb(0, 25, 255)");
@@ -605,7 +603,8 @@ public class Controller implements Initializable {
     }
     
     /**
-     * Fonction permettant la mise à jour de la couleur de chaque quadrilatère en fonction de l'anomalie de température de sa zone pour une année donnée.
+     * Fonction permettant la mise à jour de la couleur de chaque quadrilatère dans le groupe enfant.
+     * Cette couleur dépend de l'anomalie de température de la zone pour une année donnée.
      * @param parent
      * @param terre
      * @param annee
@@ -649,7 +648,7 @@ public class Controller implements Initializable {
     }
     
     /**
-     * Fonction permettant l'ajout d'un quadrilatère dans le groupe parent à partir de 4 positions en coordonnées cartésiennes et d'un material.
+     * Fonction permettant l'ajout d'un quadrilatère dans le groupe enfant à partir de 4 positions en coordonnées cartésiennes et d'un PhongMaterial.
      * @param parent
      * @param topRight
      * @param bottomRight
@@ -703,7 +702,7 @@ public class Controller implements Initializable {
     // FONCTIONS POUR LES HISTOGRAMMES
     
     /**
-	 * Fonction permettant d'adapter la légende aux histogrammes
+	 * Fonction permettant d'adapter la légende aux couleurs des histogrammes
 	 */
     private void putlegendHistogram() {
         pane5.setStyle("-fx-background-color: rgb(255, 25, 25)");
@@ -782,7 +781,8 @@ public class Controller implements Initializable {
     }
     
     /**
-     * Fonction permettant la mise à jour de la couleur et de la taille de chaque histogramme en fonction de l'anomalie de température de sa zone pour une année donnée.
+     * Fonction permettant la mise à jour de la couleur et de la taille de chaque histogramme dans le groupe enfant.
+     * Cette couleur dépend de l'anomalie de température de la zone pour une année donnée.
      * @param parent
      * @param terre
      * @param annee
