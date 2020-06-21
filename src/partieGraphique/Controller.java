@@ -358,7 +358,7 @@ public class Controller implements Initializable {
 	 * @param histo
 	 */
 	private void updateShapesParent(Group parent, Group quad, Group histo) {
-    	if (buttonQuadrilatere.isSelected() && checkBoxAnomalies.isSelected()) {
+    	if (buttonQuadrilatere.isSelected()) {
 			// Affichage des quadrilatères
         	putlegendQuadrilatere();
         	if (parent.getChildren().size() == 3) { 
@@ -366,7 +366,7 @@ public class Controller implements Initializable {
         	} else {
         		parent.getChildren().set(3, quad); // Remplacement des histogrammes par les quadrilatères à l'indice 3 du groupe parent de la scène 3D
         	}
-        } else if(buttonHistogramme.isSelected() && checkBoxAnomalies.isSelected()) {
+        } else if(buttonHistogramme.isSelected()) {
         	// Affichage des histogrammes
            putlegendHistogram();
            if (parent.getChildren().size() == 3) {
