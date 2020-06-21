@@ -161,19 +161,19 @@ public class Controller implements Initializable {
     	minAnomalie = terre.getMinAnomalie();
     	
         // Données concernant la structure de la Terre
-        ObjModelImporter objCouleurImporter = new ObjModelImporter();
-        ObjModelImporter objGrisImporter = new ObjModelImporter();
+        ObjModelImporter objColorImporter = new ObjModelImporter();
+        ObjModelImporter objGreyImporter = new ObjModelImporter();
         try {
-        	URL modelCouleurUrl = this.getClass().getResource("Earth/earth.obj");
-        	objCouleurImporter.read(modelCouleurUrl);
-        	URL modelGrisUrl = this.getClass().getResource("Earth/earth_nb.obj");
-        	objGrisImporter.read(modelGrisUrl);
+        	URL modelColorUrl = this.getClass().getResource("Earth/earth.obj");
+        	objColorImporter.read(modelColorUrl);
+        	URL modelGreyUrl = this.getClass().getResource("Earth/earth_nb.obj");
+        	objGreyImporter.read(modelGreyUrl);
         } catch (ImportException e) {
         	// handle exception
         	System.out.println(e.getMessage());
         }
-        MeshView[] meshViewsCouleur = objCouleurImporter.getImport();
-        MeshView[] meshViewsGris = objGrisImporter.getImport();
+        MeshView[] meshViewsColor = objColorImporter.getImport();
+        MeshView[] meshViewsGrey = objGreyImporter.getImport();
         
         
         // GROUPES
@@ -188,8 +188,8 @@ public class Controller implements Initializable {
          */
         
         // Groupes enfants
-        Group earthCouleur = new Group(meshViewsCouleur); // contient la structure de la Terre (en couleur)
-        Group earthGris = new Group(meshViewsGris); // contient la structure de la Terre (en gris)
+        Group earthColor = new Group(meshViewsColor); // contient la structure de la Terre (en couleur)
+        Group earthGrey = new Group(meshViewsGrey); // contient la structure de la Terre (en gris)
         Group quad = new Group(); // Groupe des quadrilatères pour une certaine année
         Group histo = new Group(); // Groupe des histogrammes pour une certaine année
         
@@ -201,7 +201,7 @@ public class Controller implements Initializable {
         putHistogramEnfant(histo, terre, 2000);
         
         // Ajout de la terre en couleur dans le groupe parent de la scène 3D
-        root3D.getChildren().add(earthCouleur); // Ajout de earth (en couleur) à l'indice 0 de root3D.getChildren()
+        root3D.getChildren().add(earthColor); // Ajout de earth (en couleur) à l'indice 0 de root3D.getChildren()
         checkBoxTerreCouleur.setSelected(true);
         
         // Ajout d'une lumière ambiante dans le groupe parent de la scène 3D
@@ -240,9 +240,9 @@ public class Controller implements Initializable {
 			@Override
 			public void handle(ActionEvent event) {
 				if (checkBoxTerreCouleur.isSelected()) {
-					root3D.getChildren().set(0, earthCouleur);
+					root3D.getChildren().set(0, earthColor);
 				} else {
-					root3D.getChildren().set(0, earthGris);
+					root3D.getChildren().set(0, earthGrey);
 				}
 			}
         });
@@ -321,8 +321,8 @@ public class Controller implements Initializable {
                 timePressed = System.currentTimeMillis();
             }
     	};
-    	earthCouleur.setOnMousePressed(eventMousePressed);
-        earthGris.setOnMousePressed(eventMousePressed);
+    	earthColor.setOnMousePressed(eventMousePressed);
+        earthGrey.setOnMousePressed(eventMousePressed);
         quad.setOnMousePressed(eventMousePressed);
     	
     	// Evenement lié au relâchement du clic de la souris
@@ -338,8 +338,8 @@ public class Controller implements Initializable {
 	            }
             }
         };
-        earthCouleur.setOnMouseReleased(eventMouseReleased);
-        earthGris.setOnMouseReleased(eventMouseReleased);
+        earthColor.setOnMouseReleased(eventMouseReleased);
+        earthGrey.setOnMouseReleased(eventMouseReleased);
         quad.setOnMouseReleased(eventMouseReleased);
         
         
